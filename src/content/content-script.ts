@@ -161,6 +161,11 @@ class MDViewContentScript {
       loadingDiv.remove();
       debug.log('MDView', 'Loading indicator removed');
 
+      // Apply initial theme after rendering completes
+      debug.log('MDView', 'Applying initial theme...');
+      await this.applyInitialTheme();
+      debug.log('MDView', 'Initial theme applied');
+
       // Set up auto-reload if enabled (after initial render completes)
       if (this.state?.preferences.autoReload) {
         debug.log('MDView', 'Auto-reload is enabled, setting up file watcher...');
@@ -266,25 +271,42 @@ class MDViewContentScript {
     debug.log('MDView', 'Auto-reload enabled');
   }
 
+  /**
+   * Apply initial theme based on user preferences
+   */
+  private async applyInitialTheme(): Promise<void> {
+    try {
+      if (!this.state) return;
+
+      const themeName = this.state.preferences.theme;
+      debug.log('MDView', `Loading theme: ${themeName}`);
+      
+      const { themeEngine } = await import('../core/theme-engine');
+      await themeEngine.applyTheme(themeName);
+      
+      debug.log('MDView', 'Theme applied successfully');
+    } catch (error) {
+      debug.error('MDView', 'Failed to apply initial theme:', error);
+    }
+  }
+
   private setupMessageListener(): void {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       debug.log('MDView', 'Content script received message:', message.type);
 
       switch (message.type) {
         case 'APPLY_THEME':
-          // TODO: Implement theme application
-          debug.log('MDView', 'Apply theme:', message.payload.theme);
-          sendResponse({ success: true });
+          this.handleApplyTheme(message.payload.theme)
+            .then(() => sendResponse({ success: true }))
+            .catch(error => sendResponse({ success: false, error: String(error) }));
+          return true; // Keep channel open for async response
           break;
 
         case 'PREFERENCES_UPDATED':
-          // TODO: Handle preference updates
-          debug.log('MDView', 'Preferences updated:', message.payload.preferences);
-          // Update debug mode if it changed
-          if (message.payload.preferences.debug !== undefined) {
-            debug.setDebugMode(message.payload.preferences.debug);
-          }
-          sendResponse({ success: true });
+          this.handlePreferencesUpdate(message.payload.preferences)
+            .then(() => sendResponse({ success: true }))
+            .catch(error => sendResponse({ success: false, error: String(error) }));
+          return true; // Keep channel open for async response
           break;
 
         case 'RELOAD_CONTENT':
@@ -297,6 +319,53 @@ class MDViewContentScript {
 
       return true;
     });
+  }
+
+  /**
+   * Handle theme application message
+   */
+  private async handleApplyTheme(themeName: string): Promise<void> {
+    try {
+      debug.log('MDView', `Applying theme: ${themeName}`);
+      const { themeEngine } = await import('../core/theme-engine');
+      await themeEngine.applyTheme(themeName as import('../types').ThemeName);
+      debug.log('MDView', 'Theme applied successfully');
+    } catch (error) {
+      debug.error('MDView', 'Failed to apply theme:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle preferences update message
+   */
+  private async handlePreferencesUpdate(preferences: any): Promise<void> {
+    try {
+      debug.log('MDView', 'Handling preferences update:', preferences);
+      
+      // Update debug mode if it changed
+      if (preferences.debug !== undefined) {
+        debug.setDebugMode(preferences.debug);
+      }
+
+      // Update theme if it changed
+      if (preferences.theme && this.state) {
+        const oldTheme = this.state.preferences.theme;
+        if (preferences.theme !== oldTheme) {
+          await this.handleApplyTheme(preferences.theme);
+        }
+      }
+
+      // Update state
+      if (this.state) {
+        this.state.preferences = { ...this.state.preferences, ...preferences };
+      }
+
+      debug.log('MDView', 'Preferences updated successfully');
+    } catch (error) {
+      debug.error('MDView', 'Failed to update preferences:', error);
+      throw error;
+    }
   }
 
   private showLargeFileWarning(size: number): void {
