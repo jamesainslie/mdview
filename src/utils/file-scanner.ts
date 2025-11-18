@@ -69,10 +69,21 @@ export class FileScanner {
    */
   static watchFile(callback: () => void, interval = 1000): () => void {
     let lastContent = '';
+    let intervalId: number | null = null;
+    let isInitialized = false;
 
     const checkForChanges = async () => {
       try {
         const currentContent = await this.readFileContent();
+        
+        // Skip the first check (initialization)
+        if (!isInitialized) {
+          lastContent = currentContent;
+          isInitialized = true;
+          return;
+        }
+        
+        // Only trigger callback if content actually changed
         if (currentContent !== lastContent) {
           lastContent = currentContent;
           callback();
@@ -82,18 +93,25 @@ export class FileScanner {
       }
     };
 
-    const intervalId = setInterval(checkForChanges, interval);
-
-    // Initialize
+    // Initialize immediately before starting interval
     this.readFileContent()
       .then((content) => {
         lastContent = content;
+        isInitialized = true;
+        // Start interval after initialization
+        intervalId = window.setInterval(checkForChanges, interval);
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error('Error initializing file watcher:', error);
+        // Start interval anyway to allow recovery
+        intervalId = window.setInterval(checkForChanges, interval);
+      });
 
     // Return cleanup function
     return () => {
-      clearInterval(intervalId);
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+      }
     };
   }
 
