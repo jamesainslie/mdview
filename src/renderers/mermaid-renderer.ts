@@ -425,7 +425,7 @@ export class MermaidRenderer {
 
     // Center the diagram at natural size
     setTimeout(() => {
-      const bbox = (svg as SVGElement).getBBox();
+      const bbox = (svg as SVGSVGElement).getBBox();
       const containerRect = container.getBoundingClientRect();
 
       // Calculate centering offset at 1:1 scale
@@ -455,7 +455,7 @@ export class MermaidRenderer {
     // Small delay to let reset take effect
     setTimeout(() => {
       // Get the true SVG content bounds
-      const bbox = (svg as SVGElement).getBBox();
+      const bbox = (svg as SVGSVGElement).getBBox();
       const containerRect = container.getBoundingClientRect();
 
       // Calculate scale to fit with more generous padding
