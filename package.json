@@ -1,0 +1,57 @@
+{
+  "name": "mdview",
+  "version": "1.0.0",
+  "description": "Beautiful Chrome extension for viewing Markdown files with themes, syntax highlighting, and interactive Mermaid diagrams",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "eslint src --ext ts,tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+  },
+  "dependencies": {
+    "dompurify": "^3.0.6",
+    "highlight.js": "^11.9.0",
+    "markdown-it": "^14.0.0",
+    "markdown-it-anchor": "^8.6.7",
+    "markdown-it-attrs": "^4.1.6",
+    "markdown-it-emoji": "^3.0.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "mermaid": "^10.6.1",
+    "panzoom": "^9.4.3"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0",
+    "@types/chrome": "^0.0.254",
+    "@types/dompurify": "^3.0.5",
+    "@types/markdown-it": "^13.0.7",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.55.0",
+    "playwright": "^1.48.0",
+    "prettier": "^3.1.0",
+    "sharp": "^0.34.5",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jamesainslie/mdview.git"
+  },
+  "keywords": [
+    "markdown",
+    "viewer",
+    "chrome-extension",
+    "mermaid",
+    "syntax-highlighting",
+    "themes"
+  ],
+  "author": "James Ainslie",
+  "license": "MIT"
+}
