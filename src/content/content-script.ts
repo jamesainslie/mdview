@@ -127,7 +127,9 @@ class MDViewContentScript {
       this.state = response.state;
       debug.log('MDView', 'State loaded:', this.state);
       // Update debug mode based on loaded state
-      debug.setDebugMode(this.state.preferences.debug);
+      if (this.state) {
+        debug.setDebugMode(this.state.preferences.debug);
+      }
     } catch (error) {
       debug.error('MDView', 'Failed to load state:', error);
       // Use default state
