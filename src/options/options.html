@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MDView Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="options-container">
+      <header class="options-header">
+        <h1>MDView Settings</h1>
+        <p>Configure your markdown viewing experience</p>
+      </header>
+
+      <div class="options-content">
+        <aside class="options-sidebar">
+          <nav class="options-nav">
+            <button class="nav-item active" data-section="appearance">Appearance</button>
+            <button class="nav-item" data-section="editor">Editor</button>
+            <button class="nav-item" data-section="code">Code Blocks</button>
+            <button class="nav-item" data-section="diagrams">Diagrams</button>
+            <button class="nav-item" data-section="performance">Performance</button>
+            <button class="nav-item" data-section="advanced">Advanced</button>
+          </nav>
+        </aside>
+
+        <main class="options-main">
+          <!-- Appearance Section -->
+          <section id="appearance" class="settings-section active">
+            <h2>Appearance</h2>
+
+            <div class="setting-group">
+              <label for="theme" class="setting-label">Theme</label>
+              <select id="theme" class="setting-input">
+                <option value="github-light">GitHub Light</option>
+                <option value="github-dark">GitHub Dark</option>
+                <option value="catppuccin-latte">Catppuccin Latte</option>
+                <option value="catppuccin-frappe">Catppuccin Frappé</option>
+                <option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+                <option value="catppuccin-mocha">Catppuccin Mocha</option>
+                <option value="monokai">Monokai</option>
+                <option value="monokai-pro">Monokai Pro</option>
+              </select>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="auto-theme" class="setting-checkbox" />
+                Auto Dark Mode
+              </label>
+              <p class="setting-description">Automatically switch between light and dark themes based on system preference</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="light-theme" class="setting-label">Light Theme</label>
+              <select id="light-theme" class="setting-input">
+                <option value="github-light">GitHub Light</option>
+                <option value="catppuccin-latte">Catppuccin Latte</option>
+                <option value="catppuccin-frappe">Catppuccin Frappé</option>
+              </select>
+            </div>
+
+            <div class="setting-group">
+              <label for="dark-theme" class="setting-label">Dark Theme</label>
+              <select id="dark-theme" class="setting-input">
+                <option value="github-dark">GitHub Dark</option>
+                <option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+                <option value="catppuccin-mocha">Catppuccin Mocha</option>
+                <option value="monokai">Monokai</option>
+                <option value="monokai-pro">Monokai Pro</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- Editor Section -->
+          <section id="editor" class="settings-section">
+            <h2>Editor</h2>
+
+            <div class="setting-group">
+              <label for="font-family" class="setting-label">Font Family</label>
+              <input type="text" id="font-family" class="setting-input" placeholder="-apple-system, sans-serif" />
+            </div>
+
+            <div class="setting-group">
+              <label for="font-size" class="setting-label">Font Size (px)</label>
+              <input type="number" id="font-size" class="setting-input" min="12" max="24" value="16" />
+            </div>
+
+            <div class="setting-group">
+              <label for="line-height" class="setting-label">Line Height</label>
+              <input type="number" id="line-height" class="setting-input" min="1.0" max="2.5" step="0.1" value="1.5" />
+            </div>
+
+            <div class="setting-group">
+              <label for="max-width" class="setting-label">Max Width (px)</label>
+              <input type="number" id="max-width" class="setting-input" min="600" max="1200" step="20" value="980" />
+            </div>
+          </section>
+
+          <!-- Code Blocks Section -->
+          <section id="code" class="settings-section">
+            <h2>Code Blocks</h2>
+
+            <div class="setting-group">
+              <label for="syntax-theme" class="setting-label">Syntax Highlighting Theme</label>
+              <select id="syntax-theme" class="setting-input">
+                <option value="github">GitHub</option>
+                <option value="github-dark">GitHub Dark</option>
+                <option value="monokai">Monokai</option>
+              </select>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="code-line-numbers" class="setting-checkbox" />
+                Show Line Numbers
+              </label>
+            </div>
+
+            <div class="setting-group">
+              <label for="code-font-family" class="setting-label">Code Font Family</label>
+              <input type="text" id="code-font-family" class="setting-input" placeholder="monospace" />
+            </div>
+          </section>
+
+          <!-- Diagrams Section -->
+          <section id="diagrams" class="settings-section">
+            <h2>Mermaid Diagrams</h2>
+
+            <div class="setting-group">
+              <label for="diagram-zoom" class="setting-label">Default Zoom (%)</label>
+              <input type="number" id="diagram-zoom" class="setting-input" min="10" max="200" value="100" />
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="diagram-animations" class="setting-checkbox" checked />
+                Enable Animations
+              </label>
+            </div>
+
+            <div class="setting-group">
+              <label for="diagram-timeout" class="setting-label">Render Timeout (seconds)</label>
+              <input type="number" id="diagram-timeout" class="setting-input" min="1" max="30" value="5" />
+            </div>
+          </section>
+
+          <!-- Performance Section -->
+          <section id="performance" class="settings-section">
+            <h2>Performance</h2>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="auto-reload" class="setting-checkbox" checked />
+                Auto Reload on File Change
+              </label>
+            </div>
+
+            <div class="setting-group">
+              <label for="reload-debounce" class="setting-label">Reload Debounce (ms)</label>
+              <input type="number" id="reload-debounce" class="setting-input" min="100" max="5000" step="100" value="300" />
+            </div>
+
+            <div class="setting-group">
+              <label for="lazy-threshold" class="setting-label">Lazy Loading Threshold (KB)</label>
+              <input type="number" id="lazy-threshold" class="setting-input" min="50" max="1000" step="50" value="500" />
+            </div>
+          </section>
+
+          <!-- Advanced Section -->
+          <section id="advanced" class="settings-section">
+            <h2>Advanced</h2>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="sync-tabs" class="setting-checkbox" />
+                Sync Settings Across Tabs
+              </label>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="debug-mode" class="setting-checkbox" />
+                Debug Mode
+              </label>
+              <p class="setting-description">Enable detailed console logging for troubleshooting</p>
+            </div>
+
+            <div class="setting-group">
+              <button id="btn-clear-cache" class="action-button">Clear Cache</button>
+              <p class="setting-description">Clear all cached markdown and theme data</p>
+            </div>
+
+            <div class="setting-group">
+              <button id="btn-reset-defaults" class="action-button danger">Reset to Defaults</button>
+              <p class="setting-description">Reset all settings to their default values</p>
+            </div>
+
+            <div class="setting-group">
+              <button id="btn-export-settings" class="action-button">Export Settings</button>
+              <button id="btn-import-settings" class="action-button">Import Settings</button>
+              <input type="file" id="import-file" accept=".json" style="display: none;" />
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <footer class="options-footer">
+        <div class="footer-actions">
+          <button id="btn-save" class="primary-button">Save Changes</button>
+          <span id="save-status" class="save-status"></span>
+        </div>
+        <p class="version">MDView v1.0.0</p>
+      </footer>
+    </div>
+
+    <script src="options.ts" type="module"></script>
+  </body>
+</html>
+

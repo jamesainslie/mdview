@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MDView Settings</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup-container">
+      <header class="popup-header">
+        <h1>MDView</h1>
+        <p class="subtitle">Markdown Viewer</p>
+      </header>
+
+      <main class="popup-main">
+        <!-- Theme Selection -->
+        <section class="setting-section">
+          <label for="theme-select" class="setting-label">Theme</label>
+          <select id="theme-select" class="theme-select">
+            <option value="github-light">GitHub Light</option>
+            <option value="github-dark">GitHub Dark</option>
+            <option value="catppuccin-latte">Catppuccin Latte</option>
+            <option value="catppuccin-frappe">Catppuccin Frappé</option>
+            <option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+            <option value="catppuccin-mocha">Catppuccin Mocha</option>
+            <option value="monokai">Monokai</option>
+            <option value="monokai-pro">Monokai Pro</option>
+          </select>
+        </section>
+
+        <!-- Quick Toggles -->
+        <section class="setting-section">
+          <div class="toggle-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="auto-theme" class="toggle-input" />
+              <span class="toggle-switch"></span>
+              <span class="toggle-text">Auto Dark Mode</span>
+            </label>
+
+            <label class="toggle-label">
+              <input type="checkbox" id="auto-reload" class="toggle-input" />
+              <span class="toggle-switch"></span>
+              <span class="toggle-text">Auto Reload</span>
+            </label>
+
+            <label class="toggle-label">
+              <input type="checkbox" id="line-numbers" class="toggle-input" />
+              <span class="toggle-switch"></span>
+              <span class="toggle-text">Line Numbers</span>
+            </label>
+
+            <label class="toggle-label">
+              <input type="checkbox" id="sync-tabs" class="toggle-input" />
+              <span class="toggle-switch"></span>
+              <span class="toggle-text">Sync Across Tabs</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="setting-section">
+          <div class="quick-actions">
+            <button id="btn-settings" class="action-button">
+              ⚙️ Full Settings
+            </button>
+            <button id="btn-help" class="action-button">
+              ❓ Help
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="popup-footer">
+        <p class="version">Version 1.0.0</p>
+      </footer>
+    </div>
+
+    <script src="popup.ts" type="module"></script>
+  </body>
+</html>
+
