@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="16" height="16" rx="3.2" fill="#0969da"/>
+  
+  <!-- Markdown 'M' symbol -->
+  <path d="
+    M 3.04 13.6
+    L 3.04 2.4
+    L 6.72 8
+    L 12.959999999999999 2.4
+    L 12.959999999999999 13.6
+  " 
+  fill="none" 
+  stroke="white" 
+  stroke-width="1.28" 
+  stroke-linecap="round" 
+  stroke-linejoin="round"/>
+  
+  <!-- Down arrow accent -->
+  <path d="
+    M 6.72 8
+    L 6.72 13.6
+  " 
+  fill="none" 
+  stroke="white" 
+  stroke-width="1.28" 
+  stroke-linecap="round"/>
+</svg>
