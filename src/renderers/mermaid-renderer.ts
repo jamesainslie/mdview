@@ -355,12 +355,12 @@ export class MermaidRenderer {
     controls.className = 'mermaid-controls';
 
     const buttons = [
-      { label: '+', title: 'Zoom In', action: () => this.zoomIn(container.id) },
-      { label: '−', title: 'Zoom Out', action: () => this.zoomOut(container.id) },
-      { label: '⊡', title: 'Reset View', action: () => this.resetZoom(container.id) },
-      { label: '⤢', title: 'Fit to View', action: () => this.fitToView(container.id) },
-      { label: '⛶', title: 'Maximize', action: () => this.maximize(container.id) },
-      { label: '↓', title: 'Export SVG', action: () => this.exportSVG(container.id) },
+      { label: '+', title: 'Zoom In (+)', action: () => this.zoomIn(container.id) },
+      { label: '−', title: 'Zoom Out (-)', action: () => this.zoomOut(container.id) },
+      { label: '⊡', title: 'Reset to 100% (0)', action: () => this.resetZoom(container.id) },
+      { label: '⤢', title: 'Fit to View (F)', action: () => this.fitToView(container.id) },
+      { label: '⛶', title: 'Maximize (M)', action: () => this.maximize(container.id) },
+      { label: '↓', title: 'Export SVG (E)', action: () => this.exportSVG(container.id) },
     ];
 
     buttons.forEach(({ label, title, action }) => {
@@ -380,10 +380,15 @@ export class MermaidRenderer {
    * Zoom in
    */
   zoomIn(containerId: string): void {
+    const container = document.getElementById(containerId);
     const panzoom = this.panzoomInstances.get(containerId);
-    if (panzoom) {
+    if (panzoom && container) {
       const transform = panzoom.getTransform();
-      panzoom.zoomTo(0, 0, transform.scale * 1.2);
+      const containerRect = container.getBoundingClientRect();
+      // Zoom toward center of visible area
+      const centerX = containerRect.width / 2;
+      const centerY = containerRect.height / 2;
+      panzoom.smoothZoomAbs(centerX, centerY, transform.scale * 1.2);
     }
   }
 
@@ -391,22 +396,44 @@ export class MermaidRenderer {
    * Zoom out
    */
   zoomOut(containerId: string): void {
+    const container = document.getElementById(containerId);
     const panzoom = this.panzoomInstances.get(containerId);
-    if (panzoom) {
+    if (panzoom && container) {
       const transform = panzoom.getTransform();
-      panzoom.zoomTo(0, 0, transform.scale * 0.8);
+      const containerRect = container.getBoundingClientRect();
+      // Zoom toward center of visible area
+      const centerX = containerRect.width / 2;
+      const centerY = containerRect.height / 2;
+      panzoom.smoothZoomAbs(centerX, centerY, transform.scale * 0.8);
     }
   }
 
   /**
-   * Reset zoom
+   * Reset zoom to 1:1 scale and center
    */
   resetZoom(containerId: string): void {
+    const container = document.getElementById(containerId);
     const panzoom = this.panzoomInstances.get(containerId);
-    if (panzoom) {
-      panzoom.moveTo(0, 0);
-      panzoom.zoomAbs(0, 0, 1);
-    }
+    
+    if (!container || !panzoom) return;
+
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+
+    // Reset to 1:1 scale
+    panzoom.zoomAbs(0, 0, 1);
+
+    // Center the diagram at natural size
+    setTimeout(() => {
+      const bbox = (svg as SVGElement).getBBox();
+      const containerRect = container.getBoundingClientRect();
+
+      // Calculate centering offset at 1:1 scale
+      const offsetX = (containerRect.width - bbox.width) / 2;
+      const offsetY = (containerRect.height - bbox.height) / 2;
+
+      panzoom.moveTo(offsetX - bbox.x, offsetY - bbox.y);
+    }, 10);
   }
 
   /**
@@ -421,17 +448,31 @@ export class MermaidRenderer {
     const svg = container.querySelector('svg');
     if (!svg) return;
 
-    // Get SVG dimensions
-    const svgRect = svg.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-
-    // Calculate scale to fit
-    const scaleX = containerRect.width / svgRect.width;
-    const scaleY = containerRect.height / svgRect.height;
-    const scale = Math.min(scaleX, scaleY, 1) * 0.9; // 90% to add padding
-
-    panzoom.zoomTo(0, 0, scale);
+    // Reset transform first to get true dimensions
+    panzoom.zoomAbs(0, 0, 1);
     panzoom.moveTo(0, 0);
+
+    // Small delay to let reset take effect
+    setTimeout(() => {
+      // Get the true SVG content bounds
+      const bbox = (svg as SVGElement).getBBox();
+      const containerRect = container.getBoundingClientRect();
+
+      // Calculate scale to fit with more generous padding
+      const scaleX = (containerRect.width * 0.9) / bbox.width;
+      const scaleY = (containerRect.height * 0.9) / bbox.height;
+      const scale = Math.min(scaleX, scaleY);
+
+      // Calculate centering offset
+      const scaledWidth = bbox.width * scale;
+      const scaledHeight = bbox.height * scale;
+      const offsetX = (containerRect.width - scaledWidth) / 2;
+      const offsetY = (containerRect.height - scaledHeight) / 2;
+
+      // Apply the transform
+      panzoom.zoomAbs(0, 0, scale);
+      panzoom.moveTo(offsetX - bbox.x * scale, offsetY - bbox.y * scale);
+    }, 10);
   }
 
   /**
@@ -444,13 +485,38 @@ export class MermaidRenderer {
     // Create overlay
     const overlay = document.createElement('div');
     overlay.className = 'mermaid-maximize-overlay';
+    overlay.setAttribute('tabindex', '0');
 
     // Clone diagram
     const clone = container.cloneNode(true) as HTMLElement;
+    
+    // Give clone a unique ID for panzoom tracking
+    const maximizedId = `${containerId}-maximized`;
+    clone.id = maximizedId;
     clone.classList.add('maximized');
+    
+    // Make the clone expand to fill available space
+    clone.style.width = '90vw';
+    clone.style.height = '90vh';
+    clone.style.maxWidth = '90vw';
+    clone.style.maxHeight = '90vh';
+    clone.style.display = 'flex';
+    clone.style.alignItems = 'center';
+    clone.style.justifyContent = 'center';
 
     overlay.appendChild(clone);
     document.body.appendChild(overlay);
+
+    const cleanup = () => {
+      const clonePanzoom = this.panzoomInstances.get(maximizedId);
+      if (clonePanzoom) {
+        clonePanzoom.dispose();
+        this.panzoomInstances.delete(maximizedId);
+      }
+      if (document.body.contains(overlay)) {
+        document.body.removeChild(overlay);
+      }
+    };
 
     // Add close button
     const closeButton = document.createElement('button');
@@ -458,25 +524,43 @@ export class MermaidRenderer {
     closeButton.textContent = '✕';
     closeButton.title = 'Close (Esc)';
     closeButton.setAttribute('aria-label', 'Close maximize mode');
-    closeButton.addEventListener('click', () => {
-      document.body.removeChild(overlay);
-    });
+    closeButton.addEventListener('click', cleanup);
     overlay.appendChild(closeButton);
 
     // Re-initialize Panzoom for maximized instance
     const svg = clone.querySelector('svg');
     if (svg) {
-      this.initializePanzoom(clone, svg as SVGElement);
+      const svgElement = svg as SVGElement;
+      // Make SVG scale to fit
+      svgElement.style.width = '100%';
+      svgElement.style.height = '100%';
+      svgElement.style.maxWidth = '100%';
+      svgElement.style.maxHeight = '100%';
+      
+      this.initializePanzoom(clone, svgElement);
+      
+      // Fit to view after a short delay
+      setTimeout(() => {
+        this.fitToView(maximizedId);
+      }, 100);
     }
 
     // Add ESC key handler
     const escHandler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        document.body.removeChild(overlay);
+        cleanup();
         document.removeEventListener('keydown', escHandler);
       }
     };
     document.addEventListener('keydown', escHandler);
+
+    // Click outside to close
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        cleanup();
+        document.removeEventListener('keydown', escHandler);
+      }
+    });
 
     // Focus overlay for accessibility
     overlay.focus();
