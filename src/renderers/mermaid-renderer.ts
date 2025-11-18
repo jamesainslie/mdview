@@ -119,15 +119,15 @@ export class MermaidRenderer {
       return;
     }
 
-    // Get mermaid code from script tag
-    const scriptTag = container.querySelector('script.mermaid-code') as HTMLScriptElement;
-    if (!scriptTag) {
-      debug.error('MermaidRenderer', `No script tag found in container ${containerId}`);
+    // Get mermaid code from global registry
+    const registry = (window as any).__MDVIEW_MERMAID_CODE__ as Map<string, string>;
+    if (!registry || !registry.has(containerId)) {
+      debug.error('MermaidRenderer', `No code found in registry for ${containerId}`);
       this.showError(container, 'No Mermaid code found');
       return;
     }
 
-    const code = scriptTag.textContent?.trim();
+    const code = registry.get(containerId)?.trim();
     debug.log('MermaidRenderer', `Container ${containerId}: code exists:`, !!code, 'length:', code?.length || 0);
     
     if (!code) {
@@ -135,8 +135,8 @@ export class MermaidRenderer {
       return;
     }
 
-    // Remove script tag now that we've read it
-    scriptTag.remove();
+    // Remove from registry now that we've read it
+    registry.delete(containerId);
 
     // Add to queue if currently rendering
     if (this.isRendering) {

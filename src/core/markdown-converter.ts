@@ -101,16 +101,20 @@ export class MarkdownConverter {
         const code = token.content.trim();
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
 
-        // Store in metadata
+        // Store in metadata with ID mapping
         this.metadata.mermaidBlocks.push({
           code,
           line: token.map ? token.map[0] : 0,
         });
 
-        // Store code in a script tag (safer than data attribute for large content)
-        // Note: No need to escape HTML in type="text/plain" - it's not executable
-        return `<div class="mermaid-container" id="${id}">
-          <script type="text/plain" class="mermaid-code">${code}</script>
+        // Store code in global registry (bypasses DOM insertion issues)
+        if (!window.__MDVIEW_MERMAID_CODE__) {
+          window.__MDVIEW_MERMAID_CODE__ = new Map();
+        }
+        window.__MDVIEW_MERMAID_CODE__.set(id, code);
+
+        // Return container without script tag (code retrieved from registry)
+        return `<div class="mermaid-container" id="${id}" data-has-code="true">
           <div class="mermaid-loading">Rendering diagram...</div>
         </div>\n`;
       }

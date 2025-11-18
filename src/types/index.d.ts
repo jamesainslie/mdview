@@ -1,5 +1,14 @@
 // Type definitions for MDView
 
+/**
+ * Global window extensions
+ */
+declare global {
+  interface Window {
+    __MDVIEW_MERMAID_CODE__?: Map<string, string>;
+  }
+}
+
 export type ThemeName =
   | 'github-light'
   | 'github-dark'

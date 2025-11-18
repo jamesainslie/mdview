@@ -75,7 +75,12 @@ export class RenderPipeline {
       if (this.cancelRequested) return;
 
       // Stage 4: Insert into DOM
-      container.innerHTML = transformed;
+      // Use <template> element for clean insertion
+      const template = document.createElement('template');
+      template.innerHTML = transformed;
+      
+      container.innerHTML = '';
+      container.appendChild(template.content);
 
       // Stage 5: Enhance (add interactive features)
       this.notifyProgress({

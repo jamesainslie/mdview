@@ -86,7 +86,7 @@ export class DOMPurifierUtil {
       'transform',
       'points',
       // Data attributes for internal use
-      'data-mermaid-code',
+      'data-has-code',
       'data-language',
       'data-line',
       // Task list attributes
@@ -100,29 +100,13 @@ export class DOMPurifierUtil {
     ALLOW_UNKNOWN_PROTOCOLS: false,
     SAFE_FOR_TEMPLATES: true,
     RETURN_TRUSTED_TYPE: false,
-    // Allow script tags but only with safe types (non-executable)
-    ADD_TAGS: ['script'],
-    ADD_ATTR: ['type'],
   };
 
   /**
    * Sanitize HTML string
    */
   static sanitize(dirty: string): string {
-    // Add hook to allow script tags only if they have type="text/plain"
-    DOMPurify.addHook('uponSanitizeElement', (node, data) => {
-      if (data.tagName === 'script') {
-        const scriptNode = node as HTMLScriptElement;
-        if (scriptNode.getAttribute('type') !== 'text/plain') {
-          // Remove executable scripts
-          return node.parentNode?.removeChild(node);
-        }
-      }
-    });
-
-    const result = DOMPurify.sanitize(dirty, this.config);
-    DOMPurify.removeAllHooks();
-    return result;
+    return DOMPurify.sanitize(dirty, this.config);
   }
 
   /**
