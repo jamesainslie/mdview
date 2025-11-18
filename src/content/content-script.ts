@@ -39,8 +39,13 @@ class MDViewContentScript {
   private state: AppState | null = null;
 
   async initialize(): Promise<void> {
+    const initStartTime = Date.now();
+    
     // Check if this is a markdown file (before logging, since we need state for debug mode)
-    if (!FileScanner.isMarkdownFile()) {
+    const isMarkdown = FileScanner.isMarkdownFile();
+    if (!isMarkdown) {
+      // Can't debug.log here as debug mode isn't loaded yet
+      console.log('[MDView] Not a markdown file, skipping initialization');
       return;
     }
 
@@ -49,74 +54,133 @@ class MDViewContentScript {
       await this.loadState();
 
       // Now we can log with proper debug mode
+      debug.log('MDView', '=== INITIALIZATION STARTED ===');
+      debug.log('MDView', `URL: ${window.location.href}`);
+      debug.log('MDView', `Document ready state: ${document.readyState}`);
+      debug.log('MDView', `Debug mode enabled: ${this.state?.preferences.debug}`);
+      debug.log('MDView', `Auto-reload enabled: ${this.state?.preferences.autoReload}`);
       debug.log('MDView', 'Content script initializing...');
       debug.log('MDView', 'Markdown file detected:', FileScanner.getFilePath());
 
       // Read file content
+      debug.log('MDView', 'Reading file content...');
       const content = await FileScanner.readFileContent();
-      debug.log('MDView', 'File content loaded:', FileScanner.formatFileSize(FileScanner.getFileSize(content)));
+      const fileSize = FileScanner.getFileSize(content);
+      debug.log('MDView', `File content loaded: ${FileScanner.formatFileSize(fileSize)} (${fileSize} bytes)`);
 
       // Check file size
       if (!FileScanner.validateFileSize(content)) {
-        this.showLargeFileWarning(FileScanner.getFileSize(content));
+        debug.log('MDView', 'File too large, showing warning');
+        this.showLargeFileWarning(fileSize);
         return;
       }
 
       // Clear existing content (preserve head to keep injected CSS)
+      debug.log('MDView', 'Clearing document body...');
       document.body.innerHTML = '';
+      debug.log('MDView', 'Document body cleared');
 
       // Add meta tags
+      debug.log('MDView', 'Setting up document meta tags...');
       this.setupDocument();
+      debug.log('MDView', 'Document meta tags configured');
+
+      // Create a loading indicator OUTSIDE the container (so it won't be cleared by render pipeline)
+      debug.log('MDView', 'Creating loading indicator...');
+      const loadingDiv = document.createElement('div');
+      loadingDiv.id = 'mdview-loading-overlay';
+      loadingDiv.className = 'mdview-loading';
+      loadingDiv.textContent = 'Rendering markdown...';
+      document.body.appendChild(loadingDiv);
+      debug.log('MDView', 'Loading indicator created and appended to body');
+
+      // Force a reflow and small delay to ensure loading indicator is painted
+      void loadingDiv.offsetHeight;
+      debug.log('MDView', 'Reflow forced, waiting for paint...');
+      await new Promise(resolve => setTimeout(resolve, 50)); // Give browser time to paint
+      debug.log('MDView', 'Loading indicator should now be visible');
 
       // Create container
+      debug.log('MDView', 'Creating render container...');
       const container = document.createElement('div');
       container.id = 'mdview-container';
       container.className = 'mdview-content';
       document.body.appendChild(container);
+      debug.log('MDView', 'Container created and appended to body');
 
-      // Show loading state
-      container.innerHTML = '<div class="mdview-loading">Rendering markdown...</div>';
-
-      // Set up auto-reload if enabled
-      // TEMPORARILY DISABLED - causing infinite loop
-      // if (this.state?.preferences.autoReload) {
-      //   this.setupAutoReload();
-      // }
+      // Track when loading started to ensure minimum display time
+      const loadingStartTime = Date.now();
+      const MIN_LOADING_TIME = 150; // Minimum 150ms to ensure visibility
+      debug.log('MDView', `Loading started at: ${loadingStartTime}, minimum display time: ${MIN_LOADING_TIME}ms`);
 
       // Listen for messages from background
+      debug.log('MDView', 'Setting up message listener...');
       this.setupMessageListener();
 
       // Import render pipeline dynamically
+      debug.log('MDView', 'Importing render pipeline...');
       const { renderPipeline } = await import('../core/render-pipeline');
-
-      // Create a loading indicator element
-      const loadingDiv = document.createElement('div');
-      loadingDiv.className = 'mdview-loading';
-      loadingDiv.textContent = 'Rendering markdown...';
-      container.appendChild(loadingDiv);
-
-      // Force a reflow to ensure loading indicator is visible
-      void container.offsetHeight;
+      debug.log('MDView', 'Render pipeline imported successfully');
 
       // Set up progress callback
+      debug.log('MDView', 'Setting up progress callback...');
       const cleanup = renderPipeline.onProgress((progress) => {
-        loadingDiv.textContent = `${progress.message} (${Math.round(progress.progress)}%)`;
+        const progressText = `${progress.message} (${Math.round(progress.progress)}%)`;
+        loadingDiv.textContent = progressText;
+        debug.log('MDView', `Progress update: ${progressText}`);
       });
+      debug.log('MDView', 'Progress callback registered');
 
       // Render the markdown
+      const isProgressive = fileSize > 500000;
+      debug.log('MDView', `Starting render - file size: ${fileSize} bytes, progressive: ${isProgressive}`);
+      
       await renderPipeline.render({
         container,
         markdown: content,
-        progressive: FileScanner.getFileSize(content) > 500000, // Use progressive for files > 500KB
+        progressive: isProgressive,
       });
+      
+      const renderTime = Date.now() - loadingStartTime;
+      debug.log('MDView', `Rendering completed in ${renderTime}ms`);
+
+      // Ensure loading indicator is visible for minimum time
+      const loadingElapsed = Date.now() - loadingStartTime;
+      if (loadingElapsed < MIN_LOADING_TIME) {
+        const waitTime = MIN_LOADING_TIME - loadingElapsed;
+        debug.log('MDView', `Rendering finished too quickly (${loadingElapsed}ms), waiting additional ${waitTime}ms for minimum display time`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        debug.log('MDView', 'Minimum display time reached');
+      } else {
+        debug.log('MDView', `Rendering took ${loadingElapsed}ms, minimum time already exceeded`);
+      }
 
       // Clean up progress callback and remove loading indicator
+      debug.log('MDView', 'Cleaning up progress callback and removing loading indicator...');
       cleanup();
       loadingDiv.remove();
+      debug.log('MDView', 'Loading indicator removed');
 
-      debug.log('MDView', 'Content script initialized successfully');
+      // Set up auto-reload if enabled (after initial render completes)
+      if (this.state?.preferences.autoReload) {
+        debug.log('MDView', 'Auto-reload is enabled, setting up file watcher...');
+        this.setupAutoReload();
+      } else {
+        debug.log('MDView', 'Auto-reload is disabled');
+      }
+
+      const totalTime = Date.now() - initStartTime;
+      debug.log('MDView', `=== INITIALIZATION COMPLETED SUCCESSFULLY in ${totalTime}ms ===`);
     } catch (error) {
       debug.error('MDView', 'Initialization error:', error);
+      
+      // Ensure loading overlay is removed even on error
+      const loadingOverlay = document.getElementById('mdview-loading-overlay');
+      if (loadingOverlay) {
+        loadingOverlay.remove();
+        debug.log('MDView', 'Loading overlay removed after error');
+      }
+      
       this.showError('Failed to initialize MDView', error);
     }
   }
@@ -179,9 +243,28 @@ class MDViewContentScript {
     document.head.appendChild(title);
   }
 
-  // TEMPORARILY DISABLED - causing infinite loop
-  // TODO: Fix auto-reload to prevent infinite loops
-  // private setupAutoReload(): void { ... }
+  private setupAutoReload(): void {
+    debug.log('MDView', 'Setting up auto-reload...');
+    
+    // Use a debounced file watcher to prevent rapid reloads
+    let reloadTimeout: number | null = null;
+    
+    const debouncedReload = () => {
+      if (reloadTimeout) {
+        clearTimeout(reloadTimeout);
+      }
+      
+      reloadTimeout = window.setTimeout(() => {
+        debug.log('MDView', 'File changed, reloading...');
+        window.location.reload();
+      }, 300); // 300ms debounce
+    };
+
+    // Set up file watcher with cleanup
+    this.autoReloadCleanup = FileScanner.watchFile(debouncedReload, 1000);
+    
+    debug.log('MDView', 'Auto-reload enabled');
+  }
 
   private setupMessageListener(): void {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
