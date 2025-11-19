@@ -77,7 +77,7 @@ const githubLight: Theme = {
     theme: 'base',
     themeVariables: {
       primaryColor: '#0969da',
-      primaryTextColor: '#ffffff',
+      primaryTextColor: '#000000',
       primaryBorderColor: '#0969da',
       lineColor: '#24292f',
       secondaryColor: '#f6f8fa',
