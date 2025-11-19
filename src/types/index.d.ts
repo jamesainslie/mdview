@@ -33,6 +33,12 @@ export interface AppState {
     syncTabs: boolean;
     logLevel: LogLevel;
     debug?: boolean; // Deprecated
+    // Editor / Appearance Overrides
+    fontFamily?: string;
+    codeFontFamily?: string;
+    lineHeight?: number;
+    maxWidth?: number;
+    useMaxWidth?: boolean; // Toggle for full width
   };
   document: {
     path: string;
@@ -218,6 +224,22 @@ export interface WorkerTask {
   payload: unknown;
   priority?: number;
 }
+
+// Message types for communication between content script and service worker
+export type MessageType =
+  | 'GET_STATE'
+  | 'UPDATE_PREFERENCES'
+  | 'APPLY_THEME'
+  | 'CACHE_GENERATE_KEY'
+  | 'CACHE_GET'
+  | 'CACHE_SET'
+  | 'CACHE_INVALIDATE'
+  | 'CACHE_INVALIDATE_BY_PATH'
+  | 'CACHE_STATS'
+  | 'REPORT_ERROR'
+  | 'CHECK_FILE_CHANGED' // New message type
+  | 'PREFERENCES_UPDATED'
+  | 'RELOAD_CONTENT';
 
 export interface WorkerResponse {
   id: string;
