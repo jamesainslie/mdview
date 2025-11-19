@@ -7,6 +7,7 @@ import mermaid from 'mermaid';
 import Panzoom from 'panzoom';
 import type { PanZoom } from 'panzoom';
 import { debug } from '../utils/debug-logger';
+import type { MermaidThemeConfig } from '../types';
 
 export interface MermaidOptions {
   theme?: 'base' | 'dark' | 'default' | 'forest' | 'neutral';
@@ -82,6 +83,73 @@ export class MermaidRenderer {
           threshold: 0.01,
         }
       );
+    }
+  }
+
+  /**
+   * Update Mermaid theme and re-render diagrams
+   */
+  updateTheme(config: MermaidThemeConfig): void {
+    debug.log('MermaidRenderer', `Updating theme to ${config.theme}`);
+    
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      maxTextSize: 50000,
+      maxEdges: 500,
+      theme: config.theme,
+      themeVariables: config.themeVariables,
+      flowchart: {
+        htmlLabels: false,
+        useMaxWidth: true,
+      },
+      sequence: {
+        useMaxWidth: true,
+      },
+      gantt: {
+        useMaxWidth: true,
+      },
+    });
+
+    this.rerenderAll().catch((error) => {
+      debug.error('MermaidRenderer', 'Failed to re-render diagrams:', error);
+    });
+  }
+
+  /**
+   * Re-render all initialized diagrams
+   */
+  private async rerenderAll(): Promise<void> {
+    const diagrams = document.querySelectorAll('.mermaid-container');
+    
+    for (const container of Array.from(diagrams)) {
+      const element = container as HTMLElement;
+      const id = element.id;
+      
+      if (!id) continue;
+
+      // Check if it was previously rendered or had an error
+      if (element.classList.contains('mermaid-ready') || element.classList.contains('mermaid-error')) {
+        // Clean up Panzoom
+        const panzoom = this.panzoomInstances.get(id);
+        if (panzoom) {
+          panzoom.dispose();
+          this.panzoomInstances.delete(id);
+        }
+
+        // Clean up keyboard listeners
+        if ((element as any).__keyboardCleanup) {
+          (element as any).__keyboardCleanup();
+        }
+
+        // Reset state
+        element.classList.remove('mermaid-ready', 'mermaid-error');
+        element.classList.add('mermaid-pending');
+        element.innerHTML = ''; // Clear content
+
+        // Re-render
+        await this.renderDiagram(id);
+      }
     }
   }
 

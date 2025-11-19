@@ -85,6 +85,14 @@ export class ThemeEngine {
     // Update syntax theme
     console.log(`[ThemeEngine] Updating syntax theme to: ${themeObj.syntaxTheme}`);
     await this.updateSyntaxTheme(themeObj.syntaxTheme);
+
+    // Update mermaid theme
+    try {
+      const { mermaidRenderer } = await import('../renderers/mermaid-renderer');
+      mermaidRenderer.updateTheme(themeObj.mermaidTheme);
+    } catch (error) {
+      console.error('[ThemeEngine] Failed to update mermaid theme:', error);
+    }
     
     // Remove transition class after a brief moment (non-blocking)
     requestAnimationFrame(() => {
