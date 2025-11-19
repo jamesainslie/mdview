@@ -1,9 +1,10 @@
 /**
  * Service Worker (Background Script)
- * Handles state management, message passing, and coordination between components
+ * Handles state management, message passing, coordination, and cache management
  */
 
-import type { AppState } from '../types';
+import type { AppState, ThemeName } from '../types';
+import { CacheManager } from '../core/cache-manager';
 
 // Default state
 const defaultState: AppState = {
@@ -16,7 +17,7 @@ const defaultState: AppState = {
     autoReload: true,
     lineNumbers: false,
     syncTabs: false,
-    debug: false,
+    logLevel: 'error',
   },
   document: {
     path: '',
@@ -30,6 +31,9 @@ const defaultState: AppState = {
     visibleDiagrams: new Set(),
   },
 };
+
+// Cache management (persists across page reloads)
+const cacheManager = new CacheManager({ maxSize: 50, maxAge: 3600000 });
 
 // State management
 class StateManager {
@@ -147,21 +151,60 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         case 'UPDATE_PREFERENCES': {
           const { preferences } = message.payload;
+          console.log('[MDView-Background] Processing UPDATE_PREFERENCES:', preferences);
+
           await stateManager.updatePreferences(preferences);
           sendResponse({ success: true });
 
-          // Broadcast to all content scripts if syncTabs is enabled
-          if (stateManager.getState().preferences.syncTabs) {
+          // Always broadcast preference updates to tabs so they can react (e.g. line numbers)
+          // This fixes the issue where toggles didn't work if syncTabs was false
+          console.log('[MDView-Background] Broadcasting preferences update to tabs');
+          const tabs = await chrome.tabs.query({});
+          tabs.forEach((tab) => {
+            if (tab.id) {
+              chrome.tabs
+                .sendMessage(tab.id, {
+                  type: 'PREFERENCES_UPDATED',
+                  payload: { preferences: stateManager.getState().preferences },
+                })
+                .catch(() => {
+                  /* Tab may not have content script */
+                });
+            }
+          });
+          break;
+        }
+
+        case 'APPLY_THEME': {
+          const { theme } = message.payload;
+          console.log('[MDView-Background] Processing APPLY_THEME:', theme);
+          
+          await stateManager.updatePreferences({ theme });
+          console.log('[MDView-Background] Preferences updated');
+          
+          sendResponse({ success: true });
+
+          // Broadcast to all tabs if syncTabs is enabled OR just to ensure current tab gets it
+          // Note: The popup sends this, so we usually want to notify all tabs or at least the active one.
+          // The current logic only broadcasts if syncTabs is true. This might be the bug if syncTabs is false.
+          // Let's log the logic branch.
+          const syncTabs = stateManager.getState().preferences.syncTabs;
+          console.log('[MDView-Background] Sync tabs enabled:', syncTabs);
+
+          if (true) { // FORCE BROADCAST FOR DEBUGGING - logic below might be too restrictive
+            console.log('[MDView-Background] Broadcasting theme change to all tabs');
             const tabs = await chrome.tabs.query({});
             tabs.forEach((tab) => {
               if (tab.id) {
+                console.log('[MDView-Background] Sending APPLY_THEME to tab:', tab.id);
                 chrome.tabs
                   .sendMessage(tab.id, {
-                    type: 'PREFERENCES_UPDATED',
-                    payload: { preferences: stateManager.getState().preferences },
+                    type: 'APPLY_THEME',
+                    payload: { theme },
                   })
-                  .catch(() => {
-                    /* Tab may not have content script */
+                  .catch((err) => {
+                    // Tab may not have content script
+                     console.log('[MDView-Background] Failed to send to tab (likely no content script):', tab.id, err.message);
                   });
               }
             });
@@ -169,27 +212,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
 
-        case 'APPLY_THEME': {
-          const { theme } = message.payload;
-          await stateManager.updatePreferences({ theme });
-          sendResponse({ success: true });
+        case 'CACHE_GENERATE_KEY': {
+          const { filePath, content, theme, preferences } = message.payload;
+          const key = await cacheManager.generateKey(filePath, content, theme as ThemeName, preferences);
+          sendResponse({ key });
+          break;
+        }
 
-          // Broadcast to all tabs if syncTabs is enabled
-          if (stateManager.getState().preferences.syncTabs) {
-            const tabs = await chrome.tabs.query({});
-            tabs.forEach((tab) => {
-              if (tab.id) {
-                chrome.tabs
-                  .sendMessage(tab.id, {
-                    type: 'APPLY_THEME',
-                    payload: { theme },
-                  })
-                  .catch(() => {
-                    /* Tab may not have content script */
-                  });
-              }
-            });
-          }
+        case 'CACHE_GET': {
+          const { key } = message.payload;
+          const result = await cacheManager.get(key);
+          sendResponse({ result });
+          break;
+        }
+
+        case 'CACHE_SET': {
+          const { key, result, filePath, contentHash, theme } = message.payload;
+          await cacheManager.set(key, result, filePath, contentHash, theme as ThemeName);
+          sendResponse({ success: true });
+          break;
+        }
+
+        case 'CACHE_INVALIDATE': {
+          const { key } = message.payload;
+          cacheManager.invalidate(key);
+          sendResponse({ success: true });
+          break;
+        }
+
+        case 'CACHE_INVALIDATE_BY_PATH': {
+          const { filePath } = message.payload;
+          cacheManager.invalidateByPath(filePath);
+          sendResponse({ success: true });
+          break;
+        }
+
+        case 'CACHE_STATS': {
+          const stats = cacheManager.getStats();
+          sendResponse({ stats });
           break;
         }
 
