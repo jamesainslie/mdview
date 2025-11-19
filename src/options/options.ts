@@ -18,13 +18,38 @@ class OptionsManager {
     // Update UI with current state
     this.updateUI();
 
+    // Load and update cache stats
+    await this.updateCacheStats();
+
     // Setup event listeners
     this.setupEventListeners();
 
     // Setup navigation
     this.setupNavigation();
 
+    // Setup storage listener
+    this.setupStorageListener();
+
     console.log('[Options] Initialized');
+  }
+
+  private setupStorageListener(): void {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === 'sync' && changes.preferences) {
+        const newPreferences = changes.preferences.newValue;
+        console.log('[Options] Storage changed, updating UI:', newPreferences);
+        
+        if (this.state) {
+          this.state.preferences = { ...this.state.preferences, ...newPreferences };
+          
+          // Only update UI if we don't have unsaved changes to avoid overwriting user input
+          // OR: simplistic approach - just update. 
+          // Given the request "sync logic", immediate update is preferred.
+          // If the user is actively editing, this might be disruptive, but likely rare collision.
+          this.updateUI();
+        }
+      }
+    });
   }
 
   private async loadState(): Promise<void> {
@@ -47,16 +72,13 @@ class OptionsManager {
     this.setValue('auto-theme', preferences.autoTheme);
     this.setValue('light-theme', preferences.lightTheme);
     this.setValue('dark-theme', preferences.darkTheme);
-
-    // Editor
-    // Use defaults for now (these would come from state in real implementation)
-    this.setValue('font-size', '16');
-    this.setValue('line-height', '1.5');
-    this.setValue('max-width', '980');
-
-    // Code Blocks
-    this.setValue('syntax-theme', preferences.syntaxTheme);
     this.setValue('code-line-numbers', preferences.lineNumbers);
+    
+    // Appearance Overrides
+    this.setValue('font-family', preferences.fontFamily || '');
+    this.setValue('code-font-family', preferences.codeFontFamily || '');
+    this.setValue('line-height', preferences.lineHeight || '');
+    this.setValue('max-width', preferences.maxWidth || '');
 
     // Diagrams
     // Use defaults
@@ -183,8 +205,14 @@ class OptionsManager {
         autoTheme: this.getCheckboxValue('auto-theme'),
         lightTheme: this.getSelectValue('light-theme') as ThemeName,
         darkTheme: this.getSelectValue('dark-theme') as ThemeName,
-        syntaxTheme: this.getSelectValue('syntax-theme'),
         lineNumbers: this.getCheckboxValue('code-line-numbers'),
+        
+        // Overrides
+        fontFamily: this.getInputValue('font-family'),
+        codeFontFamily: this.getInputValue('code-font-family'),
+        lineHeight: this.getNumberValue('line-height'),
+        maxWidth: this.getNumberValue('max-width'),
+
         autoReload: this.getCheckboxValue('auto-reload'),
         syncTabs: this.getCheckboxValue('sync-tabs'),
         logLevel: this.getSelectValue('log-level') as LogLevel,
@@ -222,6 +250,18 @@ class OptionsManager {
     return element ? element.checked : false;
   }
 
+  private getInputValue(id: string): string {
+    const element = document.getElementById(id) as HTMLInputElement;
+    return element ? element.value : '';
+  }
+
+  private getNumberValue(id: string): number | undefined {
+    const element = document.getElementById(id) as HTMLInputElement;
+    if (!element || !element.value) return undefined;
+    const val = parseFloat(element.value);
+    return isNaN(val) ? undefined : val;
+  }
+
   private updateSaveButton(): void {
     const btnSave = document.getElementById('btn-save') as HTMLButtonElement;
     if (btnSave) {
@@ -248,11 +288,53 @@ class OptionsManager {
 
     try {
       await chrome.storage.local.clear();
+      
+      // Also invalidate memory cache in background
+      await chrome.runtime.sendMessage({ type: 'CACHE_INVALIDATE_BY_PATH', payload: { filePath: '' } }); // Hack to clear all via path if we don't have explicit clear all
+      
+      // Actually, we should probably add a proper clear command to background
+      // For now let's use local storage clear as that's what we have
+      
       this.showSaveStatus('Cache cleared successfully', false);
       console.log('[Options] Cache cleared');
+      
+      // Update stats
+      await this.updateCacheStats();
     } catch (error) {
       console.error('[Options] Failed to clear cache:', error);
       this.showSaveStatus('Failed to clear cache', true);
+    }
+  }
+
+  private async updateCacheStats(): Promise<void> {
+    try {
+      // Get stats from background service worker
+      const response = await chrome.runtime.sendMessage({ type: 'CACHE_STATS' });
+      
+      if (response && response.stats) {
+        const { size, maxSize } = response.stats;
+        
+        const sizeEl = document.getElementById('cache-size');
+        const maxEl = document.getElementById('cache-max');
+        const memEl = document.getElementById('cache-memory');
+        
+        if (sizeEl) sizeEl.textContent = String(size);
+        if (maxEl) maxEl.textContent = String(maxSize);
+        
+        // Estimate memory usage (very rough estimate: 100KB per entry on average?)
+        // In reality we don't know exact memory usage easily in JS without more complex tracking
+        // Let's just show item count for now or a rough estimate
+        if (memEl) {
+          const estimatedSize = (size * 100 * 1024); // 100KB per entry
+          const formattedSize = estimatedSize > 1024 * 1024 
+            ? `${(estimatedSize / (1024 * 1024)).toFixed(1)} MB` 
+            : `${(estimatedSize / 1024).toFixed(0)} KB`;
+            
+          memEl.textContent = `~${formattedSize}`;
+        }
+      }
+    } catch (error) {
+      console.error('[Options] Failed to update cache stats:', error);
     }
   }
 

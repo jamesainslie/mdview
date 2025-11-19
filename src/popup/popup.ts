@@ -20,7 +20,24 @@ class PopupManager {
     // Setup event listeners
     this.setupEventListeners();
 
+    // Setup storage listener
+    this.setupStorageListener();
+
     console.log('[Popup] Initialized');
+  }
+
+  private setupStorageListener(): void {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === 'sync' && changes.preferences) {
+        const newPreferences = changes.preferences.newValue;
+        console.log('[Popup] Storage changed, updating UI:', newPreferences);
+        
+        if (this.state) {
+          this.state.preferences = { ...this.state.preferences, ...newPreferences };
+          this.updateUI();
+        }
+      }
+    });
   }
 
   private async loadState(): Promise<void> {
@@ -60,6 +77,11 @@ class PopupManager {
       lineNumbers.checked = preferences.lineNumbers;
     }
 
+    const useMaxWidth = document.getElementById('use-max-width') as HTMLInputElement;
+    if (useMaxWidth) {
+      useMaxWidth.checked = !!preferences.useMaxWidth;
+    }
+
     const syncTabs = document.getElementById('sync-tabs') as HTMLInputElement;
     if (syncTabs) {
       syncTabs.checked = preferences.syncTabs;
@@ -97,10 +119,26 @@ class PopupManager {
     // Line numbers toggle
     const lineNumbers = document.getElementById('line-numbers');
     if (lineNumbers) {
-      lineNumbers.addEventListener('change', (e) => {
+      lineNumbers.addEventListener('change', async (e) => {
         const target = e.target as HTMLInputElement;
         console.log('[Popup] Line numbers toggle changed:', target.checked);
-        this.handlePreferenceChange({ lineNumbers: target.checked });
+        await this.handlePreferenceChange({ lineNumbers: target.checked });
+        
+        // Trigger reload to re-render with line numbers
+        chrome.tabs.reload();
+      });
+    }
+
+    // Use max width toggle
+    const useMaxWidth = document.getElementById('use-max-width');
+    if (useMaxWidth) {
+      useMaxWidth.addEventListener('change', async (e) => {
+        const target = e.target as HTMLInputElement;
+        console.log('[Popup] Use max width toggle changed:', target.checked);
+        await this.handlePreferenceChange({ useMaxWidth: target.checked });
+        
+        // Trigger reload to re-render with new max width
+        chrome.tabs.reload();
       });
     }
 

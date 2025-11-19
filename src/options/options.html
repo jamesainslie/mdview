@@ -17,8 +17,6 @@
         <aside class="options-sidebar">
           <nav class="options-nav">
             <button class="nav-item active" data-section="appearance">Appearance</button>
-            <button class="nav-item" data-section="editor">Editor</button>
-            <button class="nav-item" data-section="code">Code Blocks</button>
             <button class="nav-item" data-section="diagrams">Diagrams</button>
             <button class="nav-item" data-section="performance">Performance</button>
             <button class="nav-item" data-section="advanced">Advanced</button>
@@ -71,56 +69,36 @@
                 <option value="monokai-pro">Monokai Pro</option>
               </select>
             </div>
-          </section>
-
-          <!-- Editor Section -->
-          <section id="editor" class="settings-section">
-            <h2>Editor</h2>
-
-            <div class="setting-group">
-              <label for="font-family" class="setting-label">Font Family</label>
-              <input type="text" id="font-family" class="setting-input" placeholder="-apple-system, sans-serif" />
-            </div>
-
-            <div class="setting-group">
-              <label for="font-size" class="setting-label">Font Size (px)</label>
-              <input type="number" id="font-size" class="setting-input" min="12" max="24" value="16" />
-            </div>
-
-            <div class="setting-group">
-              <label for="line-height" class="setting-label">Line Height</label>
-              <input type="number" id="line-height" class="setting-input" min="1.0" max="2.5" step="0.1" value="1.5" />
-            </div>
-
-            <div class="setting-group">
-              <label for="max-width" class="setting-label">Max Width (px)</label>
-              <input type="number" id="max-width" class="setting-input" min="600" max="1200" step="20" value="980" />
-            </div>
-          </section>
-
-          <!-- Code Blocks Section -->
-          <section id="code" class="settings-section">
-            <h2>Code Blocks</h2>
-
-            <div class="setting-group">
-              <label for="syntax-theme" class="setting-label">Syntax Highlighting Theme</label>
-              <select id="syntax-theme" class="setting-input">
-                <option value="github">GitHub</option>
-                <option value="github-dark">GitHub Dark</option>
-                <option value="monokai">Monokai</option>
-              </select>
-            </div>
 
             <div class="setting-group">
               <label class="setting-label">
                 <input type="checkbox" id="code-line-numbers" class="setting-checkbox" />
-                Show Line Numbers
+                Show Line Numbers in Code Blocks
               </label>
             </div>
 
             <div class="setting-group">
-              <label for="code-font-family" class="setting-label">Code Font Family</label>
-              <input type="text" id="code-font-family" class="setting-input" placeholder="monospace" />
+              <label for="font-family" class="setting-label">Font Family (Standard)</label>
+              <input type="text" id="font-family" class="setting-input" placeholder="Default: -apple-system, BlinkMacSystemFont, ..." />
+              <p class="setting-description">Leave empty to use theme default</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="code-font-family" class="setting-label">Font Family (Code)</label>
+              <input type="text" id="code-font-family" class="setting-input" placeholder="Default: ui-monospace, SFMono-Regular, ..." />
+              <p class="setting-description">Leave empty to use theme default</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="line-height" class="setting-label">Line Height</label>
+              <input type="number" id="line-height" class="setting-input" min="1.0" max="2.5" step="0.1" placeholder="Default: 1.5" />
+              <p class="setting-description">Leave empty to use theme default</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="max-width" class="setting-label">Max Width (px)</label>
+              <input type="number" id="max-width" class="setting-input" min="600" max="2000" step="20" placeholder="Default: 980" />
+              <p class="setting-description">Leave empty to use theme default</p>
             </div>
           </section>
 
@@ -194,6 +172,16 @@
             <div class="setting-group">
               <button id="btn-clear-cache" class="action-button">Clear Cache</button>
               <p class="setting-description">Clear all cached markdown and theme data</p>
+              <div id="cache-stats" class="cache-stats-container">
+                <div class="stat-item">
+                  <span class="stat-label">Items:</span>
+                  <span id="cache-size">0</span> / <span id="cache-max">50</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Memory:</span>
+                  <span id="cache-memory">~0 KB</span>
+                </div>
+              </div>
             </div>
 
             <div class="setting-group">

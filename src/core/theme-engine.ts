@@ -54,8 +54,29 @@ export class ThemeEngine {
     const themeObj = typeof theme === 'string' ? await this.loadTheme(theme) : theme;
     console.log(`[ThemeEngine] Theme loaded/resolved:`, themeObj.name);
 
-    // Compile to CSS variables
-    const cssVars = this.compileToCSSVariables(themeObj);
+    // Get user preferences for overrides (from storage, if available)
+    // Since ThemeEngine runs in content script, we need to fetch preferences.
+    // However, for performance, we might rely on preferences being passed or fetched separately.
+    // For this implementation, we'll try to fetch from storage if possible, but ideally applyTheme receives overrides.
+    
+    // Fetch overrides from storage
+    let overrides: Partial<Theme['typography']> & { maxWidth?: number, useMaxWidth?: boolean } = {};
+    try {
+        const storage = await chrome.storage.sync.get('preferences');
+        if (storage.preferences) {
+            const p = storage.preferences;
+            if (p.fontFamily) overrides.fontFamily = p.fontFamily;
+            if (p.codeFontFamily) overrides.codeFontFamily = p.codeFontFamily;
+            if (p.lineHeight) overrides.baseLineHeight = p.lineHeight;
+            if (p.maxWidth) overrides.maxWidth = p.maxWidth;
+            overrides.useMaxWidth = p.useMaxWidth;
+        }
+    } catch (e) {
+        console.warn('[ThemeEngine] Failed to load preference overrides', e);
+    }
+
+    // Compile to CSS variables with overrides
+    const cssVars = this.compileToCSSVariables(themeObj, overrides);
     
     // Apply transition class
     const root = document.documentElement;
@@ -71,6 +92,18 @@ export class ThemeEngine {
         document.body.style.setProperty(key, value);
       }
     });
+
+    // Apply max-width logic
+    if (overrides.useMaxWidth) {
+         // If "Use Full Width" is checked, set max-width to none or 100%
+         root.style.setProperty('--md-max-width', '100%');
+    } else if (overrides.maxWidth) {
+        // Apply custom max-width if set
+        root.style.setProperty('--md-max-width', `${overrides.maxWidth}px`);
+    } else {
+         // Default
+         root.style.setProperty('--md-max-width', '980px'); 
+    }
     
     // Set data attributes
     root.setAttribute('data-theme', themeObj.name);
@@ -155,7 +188,7 @@ export class ThemeEngine {
   /**
    * Compile theme to CSS variables
    */
-  compileToCSSVariables(theme: Theme): Record<string, string> {
+  compileToCSSVariables(theme: Theme, overrides: Partial<Theme['typography']> = {}): Record<string, string> {
     return {
       // Colors
       '--md-bg': theme.colors.background,
@@ -188,12 +221,12 @@ export class ThemeEngine {
       '--md-error': theme.colors.error,
       '--md-info': theme.colors.info,
 
-      // Typography
-      '--md-font-family': theme.typography.fontFamily,
-      '--md-font-family-heading': theme.typography.headingFontFamily || theme.typography.fontFamily,
-      '--md-font-family-code': theme.typography.codeFontFamily,
+      // Typography (with overrides)
+      '--md-font-family': overrides.fontFamily || theme.typography.fontFamily,
+      '--md-font-family-heading': theme.typography.headingFontFamily || overrides.fontFamily || theme.typography.fontFamily,
+      '--md-font-family-code': overrides.codeFontFamily || theme.typography.codeFontFamily,
       '--md-font-size': theme.typography.baseFontSize,
-      '--md-line-height': theme.typography.baseLineHeight.toString(),
+      '--md-line-height': (overrides.baseLineHeight || theme.typography.baseLineHeight).toString(),
       '--md-h1-size': theme.typography.h1Size,
       '--md-h2-size': theme.typography.h2Size,
       '--md-h3-size': theme.typography.h3Size,
