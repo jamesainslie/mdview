@@ -1,9 +1,12 @@
 {
   "manifest_version": 3,
   "name": "MDView - Markdown Viewer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Beautiful markdown file viewer with themes, syntax highlighting, and interactive Mermaid diagrams",
-  "permissions": ["storage", "scripting"],
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
   "host_permissions": [
     "file:///*",
     "http://*/*",
@@ -16,14 +19,16 @@
   "content_scripts": [
     {
       "matches": [
-        "file:///*.md", 
+        "file:///*.md",
         "file:///*.markdown",
         "http://*/*.md",
         "http://*/*.markdown",
         "https://*/*.md",
         "https://*/*.markdown"
       ],
-      "js": ["src/content/content-script.ts"],
+      "js": [
+        "src/content/content-script.ts"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -48,9 +53,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/*"],
-      "matches": ["file:///*"]
+      "resources": [
+        "assets/*"
+      ],
+      "matches": [
+        "file:///*"
+      ]
     }
   ]
 }
-
