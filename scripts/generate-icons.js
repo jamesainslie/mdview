@@ -67,3 +67,4 @@ console.log('   - Online: https://svgtopng.com/');
 console.log('   - CLI: brew install librsvg && rsvg-convert');
 console.log('   - Or use the SVGs directly (some contexts support it)\n');
 
+

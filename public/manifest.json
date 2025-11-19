@@ -12,7 +12,6 @@
   "content_scripts": [
     {
       "matches": ["file:///*.md", "file:///*.markdown"],
-      "css": ["src/content/content.css"],
       "js": ["src/content/content-script.ts"],
       "run_at": "document_start"
     }

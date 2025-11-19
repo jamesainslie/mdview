@@ -17,14 +17,15 @@ export default defineConfig({
         popup: resolve(__dirname, 'src/popup/popup.html'),
         options: resolve(__dirname, 'src/options/options.html'),
       },
-      output: {
-        // Use relative paths for asset imports in content scripts
-        inlineDynamicImports: false,
-      },
     },
     target: 'es2022',
     minify: 'esbuild',
     sourcemap: false,
+  },
+  // Worker configuration for blob URLs
+  worker: {
+    format: 'es',
+    plugins: [],
   },
   optimizeDeps: {
     include: [
