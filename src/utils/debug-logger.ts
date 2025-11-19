@@ -19,7 +19,7 @@ class DebugLogger {
 
   private constructor() {
     // Initialize from storage
-    this.loadDebugState();
+    void this.loadDebugState();
   }
 
   static getInstance(): DebugLogger {
@@ -31,7 +31,9 @@ class DebugLogger {
 
   private async loadDebugState(): Promise<void> {
     try {
-      const result = await chrome.storage.sync.get('preferences');
+      const result = (await chrome.storage.sync.get('preferences')) as {
+        preferences?: { logLevel?: LogLevel; debug?: boolean };
+      };
       if (result.preferences?.logLevel) {
         this.logLevel = result.preferences.logLevel;
       } else if (result.preferences?.debug) {
@@ -58,33 +60,38 @@ class DebugLogger {
     return LEVEL_PRIORITY[this.logLevel] >= LEVEL_PRIORITY[level];
   }
 
-  log(context: string, ...args: any[]): void {
+  log(context: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
-      console.log(`[${context}]`, ...args);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+      console.log(`[${context}]`, ...(args as any[]));
     }
   }
 
-  debug(context: string, ...args: any[]): void {
+  debug(context: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
-      console.debug(`[${context}]`, ...args);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+      console.debug(`[${context}]`, ...(args as any[]));
     }
   }
 
-  info(context: string, ...args: any[]): void {
+  info(context: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
-      console.info(`[${context}]`, ...args);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+      console.info(`[${context}]`, ...(args as any[]));
     }
   }
 
-  warn(context: string, ...args: any[]): void {
+  warn(context: string, ...args: unknown[]): void {
     if (this.shouldLog('warn')) {
-      console.warn(`[${context}]`, ...args);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+      console.warn(`[${context}]`, ...(args as any[]));
     }
   }
 
-  error(context: string, ...args: any[]): void {
+  error(context: string, ...args: unknown[]): void {
     if (this.shouldLog('error')) {
-      console.error(`[${context}]`, ...args);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+      console.error(`[${context}]`, ...(args as any[]));
     }
   }
 
@@ -100,8 +107,9 @@ class DebugLogger {
     }
   }
 
-  table(context: string, data: any): void {
+  table(context: string, data: unknown): void {
     if (this.shouldLog('debug')) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       console.log(`[${context}]`);
       console.table(data);
     }
@@ -123,16 +131,16 @@ class DebugLogger {
 // Export singleton instance
 export const debugLogger = DebugLogger.getInstance();
 
-// Export convenience functions
+  // Export convenience functions
 export const debug = {
-  log: (context: string, ...args: any[]) => debugLogger.log(context, ...args),
-  debug: (context: string, ...args: any[]) => debugLogger.debug(context, ...args),
-  info: (context: string, ...args: any[]) => debugLogger.info(context, ...args),
-  warn: (context: string, ...args: any[]) => debugLogger.warn(context, ...args),
-  error: (context: string, ...args: any[]) => debugLogger.error(context, ...args),
+  log: (context: string, ...args: unknown[]) => debugLogger.log(context, ...args),
+  debug: (context: string, ...args: unknown[]) => debugLogger.debug(context, ...args),
+  info: (context: string, ...args: unknown[]) => debugLogger.info(context, ...args),
+  warn: (context: string, ...args: unknown[]) => debugLogger.warn(context, ...args),
+  error: (context: string, ...args: unknown[]) => debugLogger.error(context, ...args),
   group: (context: string, label: string) => debugLogger.group(context, label),
   groupEnd: () => debugLogger.groupEnd(),
-  table: (context: string, data: any) => debugLogger.table(context, data),
+  table: (context: string, data: unknown) => debugLogger.table(context, data),
   time: (context: string, label: string) => debugLogger.time(context, label),
   timeEnd: (context: string, label: string) => debugLogger.timeEnd(context, label),
   setLogLevel: (level: LogLevel) => debugLogger.setLogLevel(level),
