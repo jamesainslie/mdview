@@ -69,8 +69,7 @@ class StateManager {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async getState(): Promise<AppState> {
+  getState(): AppState {
     return { ...this.state };
   }
 
@@ -111,7 +110,10 @@ class StateManager {
     if (!this.listeners.has(path)) {
       this.listeners.set(path, new Set());
     }
-    this.listeners.get(path)!.add(listener);
+    const pathListeners = this.listeners.get(path);
+    if (pathListeners) {
+      pathListeners.add(listener);
+    }
 
     return () => {
       this.listeners.get(path)?.delete(listener);
@@ -130,7 +132,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   void (async () => {
     await initializationPromise;
 
-    if (details.reason === 'install') {
+    if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
       // First-time installation
       debug.log('MDView', 'First-time installation detected');
       // Could open a welcome page here
@@ -147,7 +149,7 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 // Message handler
-chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: { type: string; payload: unknown }, sender, sendResponse) => {
   debug.log('MDView', 'Received message:', message.type, 'from:', sender.tab?.id);
 
   void (async () => {
@@ -158,15 +160,14 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, s
       switch (message.type) {
         case 'GET_STATE':
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-          sendResponse({ state: await stateManager.getState() });
+          sendResponse({ state: stateManager.getState() });
           break;
 
         case 'UPDATE_PREFERENCES': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { preferences } = message.payload;
+          const payload = message.payload as { preferences: Partial<AppState['preferences']> };
+          const { preferences } = payload;
           debug.log('MDView-Background', 'Processing UPDATE_PREFERENCES:', preferences);
 
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           await stateManager.updatePreferences(preferences);
           sendResponse({ success: true });
 
@@ -176,10 +177,11 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, s
           const tabs = await chrome.tabs.query({});
           tabs.forEach((tab) => {
             if (tab.id) {
+              const currentPreferences = stateManager.getState().preferences;
               void chrome.tabs
                 .sendMessage(tab.id, {
                   type: 'PREFERENCES_UPDATED',
-                  payload: { preferences: stateManager.getState().preferences },
+                  payload: { preferences: currentPreferences },
                 })
                 .catch(() => {
                   /* Tab may not have content script */
@@ -190,11 +192,10 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, s
         }
 
         case 'APPLY_THEME': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { theme } = message.payload;
+          const payload = message.payload as { theme: ThemeName };
+          const { theme } = payload;
           debug.log('MDView-Background', 'Processing APPLY_THEME:', theme);
           
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           await stateManager.updatePreferences({ theme });
           debug.log('MDView-Background', 'Preferences updated');
           
@@ -204,10 +205,11 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, s
           // Note: The popup sends this, so we usually want to notify all tabs or at least the active one.
           // The current logic only broadcasts if syncTabs is true. This might be the bug if syncTabs is false.
           // Let's log the logic branch.
-          const syncTabs = stateManager.getState().preferences.syncTabs;
+          const currentState = stateManager.getState();
+          const syncTabs = currentState.preferences.syncTabs;
           debug.log('MDView-Background', 'Sync tabs enabled:', syncTabs);
 
-          if (true) { // FORCE BROADCAST FOR DEBUGGING - logic below might be too restrictive
+          if (syncTabs) {
             debug.log('MDView-Background', 'Broadcasting theme change to all tabs');
             const tabs = await chrome.tabs.query({});
             tabs.forEach((tab) => {
@@ -218,10 +220,10 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, s
                     type: 'APPLY_THEME',
                     payload: { theme },
                   })
-                  .catch((err) => {
+                  .catch((err: unknown) => {
                     // Tab may not have content script
-                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                     debug.log('MDView-Background', 'Failed to send to tab (likely no content script):', tab.id, err.message);
+                    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+                    debug.log('MDView-Background', 'Failed to send to tab (likely no content script):', tab.id, errorMsg);
                   });
               }
             });
@@ -239,10 +241,9 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, s
         }
 
         case 'CACHE_GET': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { key } = message.payload;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          const result = await cacheManager.get(key);
+          const payload = message.payload as { key: string };
+          const { key } = payload;
+          const result = cacheManager.get(key);
           sendResponse({ result });
           break;
         }

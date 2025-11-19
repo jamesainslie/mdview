@@ -55,7 +55,7 @@ export class ScrollManager {
       const stored = sessionStorage.getItem(ScrollManager.STORAGE_KEY);
       if (!stored) return null;
 
-      const state: ScrollState = JSON.parse(stored);
+      const state = JSON.parse(stored) as ScrollState;
 
       // Only restore if it's for the same file and recent
       const age = Date.now() - state.timestamp;

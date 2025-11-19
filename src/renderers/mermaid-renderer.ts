@@ -73,7 +73,7 @@ export class MermaidRenderer {
               const container = entry.target as HTMLElement;
               const id = container.id;
               if (id && container.classList.contains('mermaid-pending')) {
-                this.renderDiagram(id).catch(debug.error);
+                void this.renderDiagram(id).catch((err) => debug.error('MermaidRenderer', err));
               }
             }
           });
@@ -138,8 +138,9 @@ export class MermaidRenderer {
         }
 
         // Clean up keyboard listeners
-        if ((element as any).__keyboardCleanup) {
-          (element as any).__keyboardCleanup();
+        const elementWithCleanup = element as HTMLElement & { __keyboardCleanup?: () => void };
+        if (elementWithCleanup.__keyboardCleanup) {
+          elementWithCleanup.__keyboardCleanup();
         }
 
         // Reset state
@@ -188,7 +189,7 @@ export class MermaidRenderer {
     }
 
     // Get mermaid code from global registry or data attribute (fallback for lazy sections)
-    const registry = (window as any).__MDVIEW_MERMAID_CODE__ as Map<string, string>;
+    const registry = (window as typeof window & { __MDVIEW_MERMAID_CODE__?: Map<string, string> }).__MDVIEW_MERMAID_CODE__;
     let code = registry?.get(containerId)?.trim();
     
     // Fallback: Check if code was stored in data attribute (from previous render)
@@ -223,7 +224,7 @@ export class MermaidRenderer {
 
     try {
       // Validate syntax
-      const validation = await this.validateSyntax(code);
+      const validation = this.validateSyntax(code);
       if (!validation.valid) {
         this.showError(container, validation.error || 'Invalid Mermaid syntax');
         return;
@@ -279,7 +280,7 @@ export class MermaidRenderer {
       if (this.renderQueue.length > 0) {
         const nextId = this.renderQueue.shift();
         if (nextId) {
-          this.renderDiagram(nextId).catch(debug.error);
+          void this.renderDiagram(nextId).catch((err) => debug.error('MermaidRenderer', err));
         }
       }
     }
@@ -288,28 +289,19 @@ export class MermaidRenderer {
   /**
    * Validate Mermaid syntax
    */
-  private async validateSyntax(code: string): Promise<{ valid: boolean; error?: string }> {
-    try {
-      // Basic validation - check for empty or malformed code
-      if (!code.trim()) {
-        return { valid: false, error: 'Empty diagram code' };
-      }
-
-      // Check size limits
-      if (code.length > 50000) {
-        return { valid: false, error: 'Diagram code exceeds size limit (50,000 characters)' };
-      }
-
-      // Try to parse (Mermaid doesn't provide a separate parse method)
-      await mermaid.parse(code);
-
-      return { valid: true };
-    } catch (error) {
-      return {
-        valid: false,
-        error: error instanceof Error ? error.message : 'Parse error',
-      };
+  private validateSyntax(code: string): { valid: boolean; error?: string } {
+    // Basic validation - check for empty or malformed code
+    if (!code.trim()) {
+      return { valid: false, error: 'Empty diagram code' };
     }
+
+    // Check size limits
+    if (code.length > 50000) {
+      return { valid: false, error: 'Diagram code exceeds size limit (50,000 characters)' };
+    }
+
+    // We'll rely on mermaid.render to catch parse errors
+    return { valid: true };
   }
 
   /**
@@ -433,7 +425,8 @@ export class MermaidRenderer {
     document.addEventListener('keydown', handler);
 
     // Store cleanup function
-    (container as any).__keyboardCleanup = () => {
+    const containerWithCleanup = container as HTMLElement & { __keyboardCleanup?: () => void };
+    containerWithCleanup.__keyboardCleanup = () => {
       document.removeEventListener('keydown', handler);
     };
   }
@@ -493,8 +486,9 @@ export class MermaidRenderer {
       button.parentNode?.replaceChild(newButton, button);
       
       // Attach new listener
-      if (actions[index]) {
-        newButton.addEventListener('click', actions[index]);
+      const action = actions[index];
+      if (action) {
+        newButton.addEventListener('click', action);
       }
     });
   }
@@ -612,8 +606,9 @@ export class MermaidRenderer {
       }
       
       // Clean up keyboard handlers
-      if ((clone as any).__keyboardCleanup) {
-        (clone as any).__keyboardCleanup();
+      const cloneWithCleanup = clone as HTMLElement & { __keyboardCleanup?: () => void };
+      if (cloneWithCleanup.__keyboardCleanup) {
+        cloneWithCleanup.__keyboardCleanup();
       }
       
       // Remove overlay from DOM
@@ -690,7 +685,7 @@ export class MermaidRenderer {
   /**
    * Export diagram as SVG
    */
-  async exportSVG(containerId: string): Promise<void> {
+  exportSVG(containerId: string): void {
     const container = document.getElementById(containerId);
     if (!container) return;
 
@@ -760,13 +755,14 @@ export class MermaidRenderer {
     // Add copy error button handler
     const copyButton = container.querySelector('.mermaid-copy-error');
     if (copyButton) {
-      copyButton.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(`${message}\n\n${code}`);
-          (copyButton as HTMLElement).textContent = '✓ Copied';
-        } catch (error) {
-          debug.error("MermaidRenderer", 'Failed to copy error:', error);
-        }
+      copyButton.addEventListener('click', () => {
+        void navigator.clipboard.writeText(`${message}\n\n${code}`)
+          .then(() => {
+            (copyButton as HTMLElement).textContent = '✓ Copied';
+          })
+          .catch((error) => {
+            debug.error("MermaidRenderer", 'Failed to copy error:', error);
+          });
       });
     }
 

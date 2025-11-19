@@ -43,7 +43,7 @@ import ini from 'highlight.js/lib/languages/ini';
 import properties from 'highlight.js/lib/languages/properties';
 
 // Register all languages
-const languages: Record<string, any> = {
+const languages: Record<string, (hljs: unknown) => unknown> = {
   javascript,
   typescript,
   python,
@@ -105,7 +105,7 @@ const languageAliases: Record<string, string> = {
 /**
  * Handle syntax highlighting task
  */
-export async function handleHighlightTask(payload: unknown): Promise<HighlightTaskResult> {
+export function handleHighlightTask(payload: unknown): HighlightTaskResult {
   const { code, language } = payload as HighlightTaskPayload;
 
   // Normalize language name

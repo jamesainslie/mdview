@@ -65,7 +65,7 @@ export class FileScanner {
    * After rendering (or for updates), we use a hidden iframe hack to read local files
    * because direct fetch() is blocked by CORS for file:// URLs.
    */
-  static async readFileContent(forceFetch = false): Promise<string> {
+  static readFileContent(forceFetch = false): string {
     // For file:// URLs, Chrome displays the content in a <pre> tag
     // Initial load check
     if (!forceFetch) {
@@ -111,17 +111,23 @@ export class FileScanner {
 
     debug.info('FileScanner', `Starting background-delegated file watcher for ${fileUrl}`);
 
-    const checkForChanges = async () => {
+    const checkForChanges = () => {
+      void (async () => {
       try {
         debug.log('FileScanner', 'Checking for file changes via background...');
         
-        const response = await chrome.runtime.sendMessage({
+        const rawResponse: unknown = await chrome.runtime.sendMessage({
           type: 'CHECK_FILE_CHANGED',
           payload: {
             url: fileUrl,
             lastHash
           }
         });
+        const response = rawResponse as {
+          error?: string;
+          changed?: boolean;
+          newHash?: string;
+        };
 
         if (response.error) {
            debug.warn('FileScanner', 'Background check error:', response.error);
@@ -140,6 +146,7 @@ export class FileScanner {
       } catch (error) {
         debug.error('FileScanner', 'Error communicating with background:', error);
       }
+      })();
     };
 
     // Start polling

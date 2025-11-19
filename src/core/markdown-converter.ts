@@ -76,7 +76,8 @@ export class MarkdownConverter {
     });
 
     // markdown-it-emoji: Emoji support
-    this.md.use((emojiPlugin as any).full || emojiPlugin);
+    const emojiPluginTyped = emojiPlugin as typeof emojiPlugin & { full?: typeof emojiPlugin };
+    this.md.use(emojiPluginTyped.full || emojiPlugin);
 
     // markdown-it-footnote: Footnotes support
     // TODO: markdown-it-footnote has ESM export issues, will be fixed in future version
@@ -169,10 +170,11 @@ export class MarkdownConverter {
     this.md.renderer.rules.image = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
       const srcIndex = token.attrIndex('src');
-      const src = srcIndex >= 0 ? token.attrs![srcIndex][1] : '';
+      const attrs = token.attrs || [];
+      const src = srcIndex >= 0 ? attrs[srcIndex][1] : '';
       const alt = token.content;
       const titleIndex = token.attrIndex('title');
-      const title = titleIndex >= 0 ? token.attrs![titleIndex][1] : undefined;
+      const title = titleIndex >= 0 ? attrs[titleIndex][1] : undefined;
 
       this.metadata.images.push({
         src,
@@ -192,7 +194,8 @@ export class MarkdownConverter {
     this.md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
       const hrefIndex = token.attrIndex('href');
-      const href = hrefIndex >= 0 ? token.attrs![hrefIndex][1] : '';
+      const attrs = token.attrs || [];
+      const href = hrefIndex >= 0 ? attrs[hrefIndex][1] : '';
       const nextToken = tokens[idx + 1];
       const text = nextToken && nextToken.type === 'inline' ? nextToken.content : '';
 
@@ -209,7 +212,7 @@ export class MarkdownConverter {
   /**
    * Convert markdown string to HTML
    */
-  async convert(markdown: string, _options?: ConvertOptions): Promise<ConversionResult> {
+  convert(markdown: string, _options?: ConvertOptions): ConversionResult {
     // Reset metadata
     this.metadata = {
       wordCount: 0,
@@ -279,7 +282,7 @@ export class MarkdownConverter {
   /**
    * Register a custom plugin
    */
-  registerPlugin(plugin: (md: MarkdownIt, options?: any) => void, options?: any): void {
+  registerPlugin(plugin: (md: MarkdownIt, options?: unknown) => void, options?: unknown): void {
     this.md.use(plugin, options);
   }
 

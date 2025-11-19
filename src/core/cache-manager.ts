@@ -66,7 +66,7 @@ export class CacheManager {
   /**
    * Get cached result by key
    */
-  async get(key: string): Promise<CachedResult | null> {
+  get(key: string): CachedResult | null {
     const entry = this.cache.get(key);
 
     if (!entry) {
@@ -92,7 +92,7 @@ export class CacheManager {
   /**
    * Set cached result
    */
-  async set(
+  set(
     key: string,
     result: CachedResult,
     filePath: string,

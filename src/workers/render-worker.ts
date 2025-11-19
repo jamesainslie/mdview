@@ -22,19 +22,21 @@ self.onmessage = async (event: MessageEvent) => {
     // Route to appropriate task handler
     switch (task.type) {
       case 'parse':
-        result = await handleParseTask(task.payload);
+        result = handleParseTask(task.payload);
         break;
 
       case 'highlight':
-        result = await handleHighlightTask(task.payload);
+        result = handleHighlightTask(task.payload);
         break;
 
       case 'mermaid':
         result = await handleMermaidTask(task.payload);
         break;
 
-      default:
-        throw new Error(`Unknown task type: ${task.type}`);
+      default: {
+        const unknownType: never = task.type;
+        throw new Error(`Unknown task type: ${String(unknownType)}`);
+      }
     }
 
     // Send success response
@@ -59,7 +61,8 @@ self.onmessage = async (event: MessageEvent) => {
  * Handle errors
  */
 self.onerror = (event: string | Event) => {
-  console.error('[RenderWorker] Error:', event);
+  const errorMessage = typeof event === 'string' ? event : (event instanceof ErrorEvent ? event.message : 'Unknown error');
+  console.error('[RenderWorker] Error:', errorMessage);
 };
 
 /**

@@ -42,7 +42,7 @@ export class LazySectionRenderer {
             const sectionId = placeholder.dataset.sectionId;
 
             if (sectionId && this.pendingSections.has(sectionId)) {
-              this.renderSection(sectionId, placeholder);
+              void this.renderSection(sectionId, placeholder);
               this.observer?.unobserve(placeholder);
             }
           }
@@ -82,7 +82,7 @@ export class LazySectionRenderer {
       this.observer.observe(placeholder);
     } else {
       // No observer support, render immediately
-      this.renderSection(section.id, placeholder);
+      void this.renderSection(section.id, placeholder);
     }
 
     return placeholder;
@@ -91,7 +91,7 @@ export class LazySectionRenderer {
   /**
    * Render a section when it becomes visible
    */
-  private async renderSection(sectionId: string, placeholder: HTMLElement): Promise<void> {
+  private renderSection(sectionId: string, placeholder: HTMLElement): void {
     const section = this.pendingSections.get(sectionId);
     if (!section || this.renderedSections.has(sectionId)) {
       return;
@@ -101,7 +101,7 @@ export class LazySectionRenderer {
 
     try {
       // Convert markdown to HTML
-      const result = await this.converter.convert(section.markdown);
+      const result = this.converter.convert(section.markdown);
       const html = result.html;
 
       // Create section container
@@ -127,10 +127,11 @@ export class LazySectionRenderer {
       debug.error('LazySectionRenderer', `Failed to render section ${sectionId}:`, error);
       
       // Show error in placeholder
+      const errorMsg = error instanceof Error ? error.message : String(error);
       placeholder.innerHTML = `
         <div class="mdview-section-error">
           <p>Failed to render section</p>
-          <pre>${error}</pre>
+          <pre>${errorMsg}</pre>
         </div>
       `;
     }

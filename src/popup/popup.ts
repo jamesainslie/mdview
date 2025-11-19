@@ -43,9 +43,8 @@ class PopupManager {
 
   private async loadState(): Promise<void> {
     try {
-      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
-        state: AppState;
-      };
+      const rawResponse: unknown = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      const response = rawResponse as { state: AppState };
       this.state = response.state;
       debug.log('Popup', 'State loaded:', this.state);
     } catch (error) {

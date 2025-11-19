@@ -258,8 +258,7 @@ export class ThemeEngine {
   private async updateSyntaxTheme(syntaxTheme: string): Promise<void> {
     try {
       const { syntaxHighlighter } = await import('../renderers/syntax-highlighter');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      await syntaxHighlighter.setTheme(syntaxTheme);
+      syntaxHighlighter.setTheme(syntaxTheme);
     } catch (error) {
       debug.error('ThemeEngine', 'Failed to update syntax theme:', error);
     }

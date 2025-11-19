@@ -69,7 +69,7 @@ class MDViewContentScript {
 
       // Read file content
       debug.debug('MDView', 'Reading file content...');
-      const content = await FileScanner.readFileContent();
+      const content = FileScanner.readFileContent();
       const fileSize = FileScanner.getFileSize(content);
       const initialHash = await FileScanner.generateHash(content);
       debug.info('MDView', `File content loaded: ${FileScanner.formatFileSize(fileSize)} (${fileSize} bytes)`);
@@ -242,9 +242,8 @@ class MDViewContentScript {
 
   private async loadState(): Promise<void> {
     try {
-      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
-        state: AppState;
-      };
+      type StateResponse = { state: AppState };
+      const response = await chrome.runtime.sendMessage({ type: 'GET_STATE' }) as unknown as StateResponse;
       this.state = response.state;
       debug.debug('MDView', 'State loaded:', this.state);
       // Update debug mode based on loaded state
@@ -391,25 +390,25 @@ class MDViewContentScript {
   }
 
   private setupMessageListener(): void {
-    chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, _sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener((message: { type: string; payload: unknown }, _sender, sendResponse) => {
       debug.info('MDView', 'Content script received message:', message.type);
 
       switch (message.type) {
-        case 'APPLY_THEME':
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          this.handleApplyTheme(message.payload.theme as string)
+        case 'APPLY_THEME': {
+          const payload = message.payload as { theme: string };
+          this.handleApplyTheme(payload.theme)
             .then(() => sendResponse({ success: true }))
             .catch(error => sendResponse({ success: false, error: String(error) }));
           return true; // Keep channel open for async response
-          break;
+        }
 
-        case 'PREFERENCES_UPDATED':
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          this.handlePreferencesUpdate(message.payload.preferences as Partial<AppState['preferences']>)
+        case 'PREFERENCES_UPDATED': {
+          const payload = message.payload as { preferences: Partial<AppState['preferences']> };
+          this.handlePreferencesUpdate(payload.preferences)
             .then(() => sendResponse({ success: true }))
             .catch(error => sendResponse({ success: false, error: String(error) }));
           return true; // Keep channel open for async response
-          break;
+        }
 
         case 'RELOAD_CONTENT':
           window.location.reload();

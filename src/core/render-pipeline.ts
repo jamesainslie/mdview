@@ -43,7 +43,7 @@ export class RenderPipeline {
   constructor() {
     this.converter = new MarkdownConverter();
     // Initialize workers in background
-    this.initializeWorkers();
+    void this.initializeWorkers();
   }
 
   /**
@@ -99,7 +99,7 @@ export class RenderPipeline {
             message: 'Loading from cache...',
           });
           
-          await this.renderFromCache(container, cached);
+          this.renderFromCache(container, cached);
           return;
         }
       }
@@ -148,10 +148,10 @@ export class RenderPipeline {
           debug.debug('RenderPipeline', 'Parsed markdown in worker');
         } catch (error) {
           debug.error('RenderPipeline', 'Worker parsing failed, falling back to sync:', error);
-          result = await this.converter.convert(markdown);
+          result = this.converter.convert(markdown);
         }
       } else {
-        result = await this.converter.convert(markdown);
+        result = this.converter.convert(markdown);
       }
 
       if (this.cancelRequested) return;
@@ -163,7 +163,7 @@ export class RenderPipeline {
         message: 'Sanitizing content...',
       });
 
-      const sanitized = await this.sanitizeContent(result);
+      const sanitized = this.sanitizeContent(result);
 
       if (this.cancelRequested) return;
 
@@ -174,7 +174,7 @@ export class RenderPipeline {
         message: 'Processing content...',
       });
 
-      const transformed = await this.transformContent(sanitized, result, preferences);
+      const transformed = this.transformContent(sanitized, result, preferences);
 
       if (this.cancelRequested) return;
 
@@ -206,7 +206,7 @@ export class RenderPipeline {
       });
 
       debug.info('RenderPipeline', 'Applying theme...');
-      await this.applyTheming(container);
+      this.applyTheming(container);
       debug.info('RenderPipeline', 'Theme applied successfully');
 
       // Cache the result if enabled (to service worker)
@@ -225,7 +225,7 @@ export class RenderPipeline {
             cacheKey,
           };
 
-          await this.setCachedResult(cacheKey, cachedResult, filePath, contentHash, theme as ThemeName);
+          this.setCachedResult(cacheKey, cachedResult, filePath, contentHash, theme as ThemeName);
           debug.debug('RenderPipeline', 'Result cached in service worker');
         } catch (error) {
           debug.error('RenderPipeline', 'Failed to cache result:', error);
@@ -249,12 +249,12 @@ export class RenderPipeline {
   /**
    * Render from cached result
    */
-  private async renderFromCache(container: HTMLElement, cached: CachedResult): Promise<void> {
+  private renderFromCache(container: HTMLElement, cached: CachedResult): void {
     // Insert cached HTML
     container.innerHTML = cached.html;
 
     // Re-initialize interactive features
-    await this.reinitializeInteractiveFeatures(container);
+    this.reinitializeInteractiveFeatures(container);
 
     this.notifyProgressThrottled({
       stage: 'complete',
@@ -266,7 +266,7 @@ export class RenderPipeline {
   /**
    * Re-initialize interactive features for cached content
    */
-  private async reinitializeInteractiveFeatures(container: HTMLElement): Promise<void> {
+  private reinitializeInteractiveFeatures(container: HTMLElement): void {
     // Re-add copy buttons
     this.addCopyButtons(container);
 
@@ -276,13 +276,11 @@ export class RenderPipeline {
     // Re-initialize Mermaid diagrams (they may need panzoom reinitialization)
     const mermaidContainers = container.querySelectorAll('.mermaid-container.mermaid-ready');
     if (mermaidContainers.length > 0) {
-      try {
-        // Mermaid diagrams should already have SVG from cache
-        // Controls will be re-added automatically when mermaid module loads
-        await import('../renderers/mermaid-renderer');
-      } catch (error) {
+      // Mermaid diagrams should already have SVG from cache
+      // Controls will be re-added automatically when mermaid module loads
+      void import('../renderers/mermaid-renderer').catch((error) => {
         debug.error('RenderPipeline', 'Failed to reinitialize mermaid:', error);
-      }
+      });
     }
   }
 
@@ -290,7 +288,7 @@ export class RenderPipeline {
    * Enhance content with parallel worker processing
    * Optimized: Critical operations first, non-critical during idle time
    */
-  private async enhanceContentWithWorkers(
+  private enhanceContentWithWorkers(
     container: HTMLElement,
     _result: ConversionResult,
     useWorkers: boolean
@@ -298,10 +296,10 @@ export class RenderPipeline {
     // CRITICAL: Apply syntax highlighting to visible blocks first (lazy loaded)
     if (useWorkers) {
       debug.debug('RenderPipeline', 'Applying syntax highlighting with workers...');
-      await this.applySyntaxHighlightingWithWorkers(container);
+      void this.applySyntaxHighlightingWithWorkers(container);
     } else {
       debug.debug('RenderPipeline', 'Applying syntax highlighting...');
-      await this.applySyntaxHighlighting(container);
+      this.applySyntaxHighlighting(container);
     }
 
     // CRITICAL: Mark Mermaid blocks (actual rendering happens lazily on intersection)
@@ -342,15 +340,16 @@ export class RenderPipeline {
    * Apply syntax highlighting using workers (parallel)
    * Optimized: Uses lazy loading for better perceived performance
    */
-  private async applySyntaxHighlightingWithWorkers(container: HTMLElement): Promise<void> {
+  private applySyntaxHighlightingWithWorkers(container: HTMLElement): void {
     // Even with workers available, use lazy loading for instant content display
     // Only visible code blocks are highlighted immediately, rest on scroll
-    try {
-      const { syntaxHighlighter } = await import('../renderers/syntax-highlighter');
-      syntaxHighlighter.highlightVisible(container);
-    } catch (error) {
-      debug.error('RenderPipeline', 'Syntax highlighting error:', error);
-    }
+    void import('../renderers/syntax-highlighter')
+      .then(({ syntaxHighlighter }) => {
+        syntaxHighlighter.highlightVisible(container);
+      })
+      .catch((error) => {
+        debug.error('RenderPipeline', 'Syntax highlighting error:', error);
+      });
   }
 
   /**
@@ -386,10 +385,11 @@ export class RenderPipeline {
     theme: ThemeName,
     preferences: Record<string, unknown>
   ): Promise<string> {
+    type KeyResponse = { key: string };
     const response = await chrome.runtime.sendMessage({
       type: 'CACHE_GENERATE_KEY',
       payload: { filePath, content, theme, preferences },
-    });
+    }) as unknown as KeyResponse;
     return response.key;
   }
 
@@ -397,24 +397,25 @@ export class RenderPipeline {
    * Get cached result from service worker
    */
   private async getCachedResult(key: string): Promise<CachedResult | null> {
+    type CacheResponse = { result?: CachedResult };
     const response = await chrome.runtime.sendMessage({
       type: 'CACHE_GET',
       payload: { key },
-    });
+    }) as unknown as CacheResponse;
     return response.result || null;
   }
 
   /**
    * Set cached result in service worker
    */
-  private async setCachedResult(
+  private setCachedResult(
     key: string,
     result: CachedResult,
     filePath: string,
     contentHash: string,
     theme: ThemeName
-  ): Promise<void> {
-    await chrome.runtime.sendMessage({
+  ): void {
+    void chrome.runtime.sendMessage({
       type: 'CACHE_SET',
       payload: { key, result, filePath, contentHash, theme },
     });
@@ -512,7 +513,7 @@ export class RenderPipeline {
     });
 
     // Apply theme immediately to skeleton
-    await this.applyTheming(container);
+    this.applyTheming(container);
 
     // ===================================================================
     // PHASE 2: Progressive Hydration
@@ -537,10 +538,10 @@ export class RenderPipeline {
         }
 
         // Convert markdown to HTML
-        const result = await this.converter.convert(section.markdown);
-        const sanitized = await this.sanitizeContent(result);
+        const result = this.converter.convert(section.markdown);
+        const sanitized = this.sanitizeContent(result);
         debug.debug('RenderPipeline', `Hydrating section ${i}: Transforming content with preferences`, JSON.stringify(preferences));
-        const transformed = await this.transformContent(sanitized, result, preferences);
+        const transformed = this.transformContent(sanitized, result, preferences);
 
         // Replace skeleton content with actual content
         sectionElement.innerHTML = transformed;
@@ -567,7 +568,7 @@ export class RenderPipeline {
       message: 'Enhancing content...',
     });
 
-    await this.enhanceContentWithWorkers(container, { html: '', metadata: {} } as ConversionResult, false);
+    void this.enhanceContentWithWorkers(container, { html: '', metadata: {} } as ConversionResult, false);
 
     this.notifyProgressThrottled({
       stage: 'complete',
@@ -598,7 +599,7 @@ export class RenderPipeline {
   /**
    * Stage 2: Sanitize content
    */
-  private async sanitizeContent(result: ConversionResult): Promise<string> {
+  private sanitizeContent(result: ConversionResult): string {
     // Use DOMPurify to sanitize
     return domPurifier.sanitize(result.html);
   }
@@ -606,7 +607,7 @@ export class RenderPipeline {
   /**
    * Stage 3: Transform content (process special blocks)
    */
-  private async transformContent(html: string, result: ConversionResult, preferences: Record<string, unknown> = {}): Promise<string> {
+  private transformContent(html: string, result: ConversionResult, preferences: Record<string, unknown> = {}): string {
     debug.debug('RenderPipeline', 'Transforming content with preferences:', JSON.stringify(preferences));
     let transformed = html;
 
@@ -625,19 +626,20 @@ export class RenderPipeline {
   /**
    * Apply syntax highlighting to code blocks
    */
-  private async applySyntaxHighlighting(container: HTMLElement): Promise<void> {
-    try {
-      const { syntaxHighlighter } = await import('../renderers/syntax-highlighter');
-      syntaxHighlighter.highlightVisible(container);
-    } catch (error) {
-      debug.error('RenderPipeline', 'Syntax highlighting error:', error);
-    }
+  private applySyntaxHighlighting(container: HTMLElement): void {
+    void import('../renderers/syntax-highlighter')
+      .then(({ syntaxHighlighter }) => {
+        syntaxHighlighter.highlightVisible(container);
+      })
+      .catch((error) => {
+        debug.error('RenderPipeline', 'Syntax highlighting error:', error);
+      });
   }
 
   /**
    * Stage 6: Apply theming
    */
-  private async applyTheming(container: HTMLElement): Promise<void> {
+  private applyTheming(container: HTMLElement): void {
     // Theme will be applied by theme engine
     // This is a placeholder for theme-specific transformations
     container.classList.add('mdview-rendered');
@@ -652,7 +654,7 @@ export class RenderPipeline {
 
     return html.replace(
       /<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
-      (_match, lang, code) => {
+      (_match, lang: string, code: string) => {
         let lineNumbersHtml = '';
         let wrapperClass = 'code-block-wrapper';
         let contentStart = '';
@@ -709,22 +711,23 @@ export class RenderPipeline {
       copyButton.textContent = 'Copy';
       copyButton.setAttribute('aria-label', 'Copy code to clipboard');
 
-      copyButton.addEventListener('click', async () => {
+      copyButton.addEventListener('click', () => {
         const code = wrapper.querySelector('code');
         if (code) {
-          try {
-            await navigator.clipboard.writeText(code.textContent || '');
-            copyButton.textContent = '✓ Copied';
-            setTimeout(() => {
-              copyButton.textContent = 'Copy';
-            }, 2000);
-          } catch (error) {
-            debug.error('RenderPipeline', 'Failed to copy:', error);
-            copyButton.textContent = '✗ Failed';
-            setTimeout(() => {
-              copyButton.textContent = 'Copy';
-            }, 2000);
-          }
+          void navigator.clipboard.writeText(code.textContent || '')
+            .then(() => {
+              copyButton.textContent = '✓ Copied';
+              setTimeout(() => {
+                copyButton.textContent = 'Copy';
+              }, 2000);
+            })
+            .catch((error) => {
+              debug.error('RenderPipeline', 'Failed to copy:', error);
+              copyButton.textContent = '✗ Failed';
+              setTimeout(() => {
+                copyButton.textContent = 'Copy';
+              }, 2000);
+            });
         }
       });
 
@@ -769,21 +772,18 @@ export class RenderPipeline {
     });
 
     // Initialize Mermaid renderer
-    this.renderMermaidDiagrams(container).catch((error) => {
-      debug.error('RenderPipeline', 'Mermaid rendering catch error:', error);
-    });
+    this.renderMermaidDiagrams(container);
   }
 
   /**
    * Render Mermaid diagrams
    */
-  private async renderMermaidDiagrams(container: HTMLElement): Promise<void> {
-    try {
-      const { mermaidRenderer } = await import('../renderers/mermaid-renderer');
-      await mermaidRenderer.renderAll(container);
-    } catch (error) {
-      debug.error('RenderPipeline', 'Mermaid rendering error:', error);
-    }
+  private renderMermaidDiagrams(container: HTMLElement): void {
+    void import('../renderers/mermaid-renderer')
+      .then(({ mermaidRenderer }) => mermaidRenderer.renderAll(container))
+      .catch((error) => {
+        debug.error('RenderPipeline', 'Mermaid rendering error:', error);
+      });
   }
 
   /**

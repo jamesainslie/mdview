@@ -116,7 +116,11 @@ export class DOMPurifierUtil {
     const sanitized = this.sanitize(element.outerHTML);
     const temp = document.createElement('div');
     temp.innerHTML = sanitized;
-    return temp.firstChild as HTMLElement;
+    const firstChild = temp.firstChild;
+    if (!firstChild || !(firstChild instanceof HTMLElement)) {
+      throw new Error('Failed to sanitize element or result is not HTMLElement');
+    }
+    return firstChild;
   }
 
   /**
@@ -134,8 +138,9 @@ export class DOMPurifierUtil {
     const removed: string[] = [];
     
     DOMPurify.addHook('uponSanitizeElement', (_node, data) => {
-      if (data.allowedTags[data.tagName as keyof typeof data.allowedTags] === false) {
-        removed.push(data.tagName);
+      const tagName = data.tagName;
+      if (tagName && data.allowedTags[tagName] === false) {
+        removed.push(tagName);
       }
     });
 

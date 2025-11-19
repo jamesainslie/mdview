@@ -55,9 +55,8 @@ class OptionsManager {
 
   private async loadState(): Promise<void> {
     try {
-      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
-        state: AppState;
-      };
+      const rawResponse: unknown = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      const response = rawResponse as { state: AppState };
       this.state = response.state;
       debug.log('Options', 'State loaded:', this.state);
     } catch (error) {
@@ -312,11 +311,10 @@ class OptionsManager {
   private async updateCacheStats(): Promise<void> {
     try {
       // Get stats from background service worker
-      const response = (await chrome.runtime.sendMessage({ type: 'CACHE_STATS' })) as {
-        stats?: { size: number; maxSize: number };
-      };
+      const rawResponse: unknown = await chrome.runtime.sendMessage({ type: 'CACHE_STATS' });
+      const response = rawResponse as { stats?: { size: number; maxSize: number } };
       
-      if (response && response.stats) {
+      if (response?.stats) {
         const { size, maxSize } = response.stats;
         
         const sizeEl = document.getElementById('cache-size');
@@ -388,7 +386,7 @@ class OptionsManager {
     }
   }
 
-  private async exportSettings(): Promise<void> {
+  private exportSettings(): void {
     if (!this.state) return;
 
     try {

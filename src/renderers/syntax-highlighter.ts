@@ -43,7 +43,7 @@ export class SyntaxHighlighter {
   ]);
 
   // Map of language module loaders
-  private languageModules: Record<string, () => Promise<any>> = {
+  private languageModules: Record<string, () => Promise<unknown>> = {
     go: () => import('highlight.js/lib/languages/go'),
     rust: () => import('highlight.js/lib/languages/rust'),
     java: () => import('highlight.js/lib/languages/java'),
@@ -122,10 +122,10 @@ export class SyntaxHighlighter {
         };
       } else {
         // Fallback: auto-detect
-        return await this.highlightAuto(code);
+        return this.highlightAuto(code);
       }
     } catch (error) {
-      console.error(`[SyntaxHighlighter] Error highlighting ${normalizedLang}:`, error);
+      debug.error("SyntaxHighlighter", `Error highlighting ${normalizedLang}:`, error);
       // Return unformatted code
       return {
         html: this.escapeHtml(code),
@@ -138,7 +138,7 @@ export class SyntaxHighlighter {
   /**
    * Auto-detect and highlight code
    */
-  async highlightAuto(code: string): Promise<HighlightResult> {
+  highlightAuto(code: string): HighlightResult {
     try {
       const result = hljs.highlightAuto(code);
       return {
@@ -159,7 +159,7 @@ export class SyntaxHighlighter {
   /**
    * Detect code language
    */
-  async detectLanguage(code: string): Promise<DetectionResult> {
+  detectLanguage(code: string): DetectionResult {
     try {
       const result = hljs.highlightAuto(code);
       return {
@@ -193,17 +193,18 @@ export class SyntaxHighlighter {
     // Check if we have a loader for this language
     const loader = this.languageModules[language];
     if (!loader) {
-      console.warn(`[SyntaxHighlighter] No loader for language: ${language}`);
+      debug.warn("SyntaxHighlighter", `No loader for language: ${language}`);
       return;
     }
 
     try {
       const module = await loader();
-      hljs.registerLanguage(language, module.default);
+      const langModule = module as { default: (hljs: unknown) => unknown };
+      hljs.registerLanguage(language, langModule.default);
       this.loadedLanguages.add(language);
       debug.log("SyntaxHighlighter", ` Loaded language: ${language}`);
     } catch (error) {
-      console.error(`[SyntaxHighlighter] Failed to load language ${language}:`, error);
+      debug.error("SyntaxHighlighter", `Failed to load language ${language}:`, error);
     }
   }
 
@@ -265,7 +266,7 @@ export class SyntaxHighlighter {
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(
         (entries) => {
-          entries.forEach(async (entry) => {
+          entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const block = entry.target as HTMLElement;
               const code = block.textContent || '';
@@ -275,14 +276,15 @@ export class SyntaxHighlighter {
               if (langClass) {
                 const lang = langClass.replace('language-', '');
                 
-                try {
-                  const result = await this.highlight(code, lang);
-                  block.innerHTML = result.html;
-                  block.classList.add('hljs', 'highlighted');
-                  block.setAttribute('data-language', result.language);
-                } catch (error) {
-                  debug.error('SyntaxHighlighter',' Error highlighting block:', error);
-                }
+                void this.highlight(code, lang)
+                  .then((result) => {
+                    block.innerHTML = result.html;
+                    block.classList.add('hljs', 'highlighted');
+                    block.setAttribute('data-language', result.language);
+                  })
+                  .catch((error) => {
+                    debug.error('SyntaxHighlighter',' Error highlighting block:', error);
+                  });
               }
 
               observer.unobserve(block);
@@ -298,7 +300,7 @@ export class SyntaxHighlighter {
       codeBlocks.forEach((block) => observer.observe(block));
     } else {
       // Fallback: highlight all immediately
-      this.highlightAll(container).catch((error) => debug.error("SyntaxHighlighter", "Catch error:", error));
+      void this.highlightAll(container).catch((error) => debug.error("SyntaxHighlighter", "Catch error:", error));
     }
   }
 
@@ -324,7 +326,7 @@ export class SyntaxHighlighter {
    * Note: Dynamic CSS imports don't work in Chrome extensions, so we rely on
    * the theme engine's CSS custom properties for styling instead.
    */
-  async setTheme(themeName: string): Promise<void> {
+  setTheme(themeName: string): void {
     // In Chrome extensions, dynamic CSS imports with ?inline don't work
     // The theme engine applies CSS custom properties that style the hljs classes
     // So we just log and skip the highlight.js theme loading
