@@ -26,3 +26,4 @@ declare module 'markdown-it-footnote' {
   export default markdownItFootnote;
 }
 
+

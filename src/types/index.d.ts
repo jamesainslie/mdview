@@ -19,6 +19,8 @@ export type ThemeName =
   | 'monokai'
   | 'monokai-pro';
 
+export type LogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
+
 export interface AppState {
   preferences: {
     theme: ThemeName;
@@ -29,7 +31,8 @@ export interface AppState {
     autoReload: boolean;
     lineNumbers: boolean;
     syncTabs: boolean;
-    debug: boolean;
+    logLevel: LogLevel;
+    debug?: boolean; // Deprecated
   };
   document: {
     path: string;
@@ -186,5 +189,74 @@ export interface ValidationResult {
   valid: boolean;
   errors: ParseError[];
   warnings: ParseError[];
+}
+
+// Cache types
+export interface CachedResult {
+  html: string;
+  metadata: ConversionResult['metadata'];
+  highlightedBlocks: Map<string, string>;
+  mermaidSVGs: Map<string, string>;
+  timestamp: number;
+  cacheKey: string;
+}
+
+export interface CacheEntry {
+  result: CachedResult;
+  filePath: string;
+  contentHash: string;
+  theme: ThemeName;
+  lastAccessed: number;
+}
+
+// Worker types
+export type WorkerTaskType = 'parse' | 'highlight' | 'mermaid';
+
+export interface WorkerTask {
+  type: WorkerTaskType;
+  id: string;
+  payload: unknown;
+  priority?: number;
+}
+
+export interface WorkerResponse {
+  id: string;
+  result?: unknown;
+  error?: string;
+}
+
+export interface ParseTaskPayload {
+  markdown: string;
+  options?: {
+    breaks?: boolean;
+    linkify?: boolean;
+    typographer?: boolean;
+  };
+}
+
+export interface ParseTaskResult {
+  html: string;
+  metadata: ConversionResult['metadata'];
+}
+
+export interface HighlightTaskPayload {
+  code: string;
+  language: string;
+}
+
+export interface HighlightTaskResult {
+  html: string;
+  language: string;
+}
+
+export interface MermaidTaskPayload {
+  code: string;
+  theme?: MermaidThemeConfig;
+  id: string;
+}
+
+export interface MermaidTaskResult {
+  svg: string;
+  id: string;
 }
 
