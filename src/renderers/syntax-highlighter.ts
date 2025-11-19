@@ -321,37 +321,17 @@ export class SyntaxHighlighter {
 
   /**
    * Set syntax theme (load CSS)
+   * Note: Dynamic CSS imports don't work in Chrome extensions, so we rely on
+   * the theme engine's CSS custom properties for styling instead.
    */
   async setTheme(themeName: string): Promise<void> {
-    // Remove existing syntax theme
-    const existing = document.getElementById('hljs-theme');
-    if (existing) {
-      existing.remove();
-    }
-
-    try {
-      // Dynamically import theme CSS
-      const themeModule = await import(`highlight.js/styles/${themeName}.css?inline`);
-      
-      const style = document.createElement('style');
-      style.id = 'hljs-theme';
-      style.textContent = themeModule.default;
-      document.head.appendChild(style);
-
-      debug.log("SyntaxHighlighter", ` Applied theme: ${themeName}`);
-    } catch (error) {
-      console.error(`[SyntaxHighlighter] Failed to load theme ${themeName}:`, error);
-      // Fallback to default theme
-      try {
-        const defaultTheme = await import('highlight.js/styles/github.css?inline');
-        const style = document.createElement('style');
-        style.id = 'hljs-theme';
-        style.textContent = defaultTheme.default;
-        document.head.appendChild(style);
-      } catch (fallbackError) {
-        debug.error('SyntaxHighlighter',' Failed to load fallback theme:', fallbackError);
-      }
-    }
+    // In Chrome extensions, dynamic CSS imports with ?inline don't work
+    // The theme engine applies CSS custom properties that style the hljs classes
+    // So we just log and skip the highlight.js theme loading
+    debug.log("SyntaxHighlighter", `Syntax theme ${themeName} will be styled via theme engine CSS custom properties`);
+    
+    // Note: The .hljs-* classes are styled by our theme system through CSS variables
+    // defined in src/content/content.css and theme files
   }
 }
 

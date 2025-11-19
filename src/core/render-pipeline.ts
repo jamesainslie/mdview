@@ -5,8 +5,11 @@
 
 import { MarkdownConverter } from './markdown-converter';
 import { domPurifier } from '../utils/dom-purifier';
-import type { ConversionResult } from '../types';
+import { workerPool } from '../workers/worker-pool';
+import type { ConversionResult, ThemeName, CachedResult, ParseTaskPayload } from '../types';
 import { debug } from '../utils/debug-logger';
+import { splitIntoSections } from '../utils/section-splitter';
+import { SkeletonRenderer } from '../utils/skeleton-renderer';
 
 export interface RenderOptions {
   container: HTMLElement;
@@ -14,10 +17,15 @@ export interface RenderOptions {
   theme?: string;
   progressive?: boolean;
   chunkSize?: number;
+  filePath?: string;
+  preferences?: Record<string, unknown>;
+  useCache?: boolean;
+  useWorkers?: boolean;
+  useLazySections?: boolean; // New: Enable lazy section rendering
 }
 
 export interface RenderProgress {
-  stage: 'parsing' | 'sanitizing' | 'transforming' | 'enhancing' | 'theming' | 'complete';
+  stage: 'parsing' | 'sanitizing' | 'transforming' | 'enhancing' | 'theming' | 'complete' | 'cached';
   progress: number; // 0-100
   message: string;
 }
@@ -28,32 +36,128 @@ export class RenderPipeline {
   private converter: MarkdownConverter;
   private progressCallbacks: Set<ProgressCallback> = new Set();
   private cancelRequested = false;
+  private workersEnabled = true;
+  private progressUpdateTimer: number | null = null;
+  private lastProgressUpdate = 0;
 
   constructor() {
     this.converter = new MarkdownConverter();
+    // Initialize workers in background
+    this.initializeWorkers();
   }
 
   /**
-   * Main render function
+   * Initialize worker pool
+   * Note: Workers are disabled on file:// URLs due to Chrome security
+   * The synchronous rendering path is optimized with Phase 1 improvements
+   */
+  private async initializeWorkers(): Promise<void> {
+    try {
+      await workerPool.initialize();
+      this.workersEnabled = true;
+      debug.log('RenderPipeline', '✅ Worker pool initialized');
+    } catch (error) {
+      // Workers unavailable (file:// URLs) - use optimized sync rendering
+      if (window.location.protocol === 'file:') {
+        debug.log('RenderPipeline', 'Using optimized synchronous rendering (workers unavailable on file:// URLs)');
+      } else {
+        debug.error('RenderPipeline', 'Worker initialization failed, using sync fallback:', error);
+      }
+      this.workersEnabled = false;
+    }
+  }
+
+  /**
+   * Main render function with cache and worker support
    */
   async render(options: RenderOptions): Promise<void> {
     this.cancelRequested = false;
-    const { container, markdown } = options;
+    const { 
+      container, 
+      markdown, 
+      theme = 'github-light', 
+      filePath = '',
+      preferences = {},
+      useCache = true,
+      useWorkers = true,
+      useLazySections = false, // Lazy sections disabled by default
+    } = options;
+
+    const shouldUseWorkers = useWorkers && this.workersEnabled;
 
     try {
-      // Stage 1: Parse markdown to HTML
-      this.notifyProgress({
+      // Check cache if enabled (from service worker)
+      if (useCache && filePath) {
+        const cacheKey = await this.getCacheKey(filePath, markdown, theme as ThemeName, preferences);
+
+        const cached = await this.getCachedResult(cacheKey);
+        if (cached) {
+          debug.info('RenderPipeline', 'Using cached result from service worker');
+          this.notifyProgressThrottled({
+            stage: 'cached',
+            progress: 100,
+            message: 'Loading from cache...',
+          });
+          
+          await this.renderFromCache(container, cached);
+          return;
+        }
+      }
+
+      // Use progressive hydration for large files (> 30KB)
+      if (useLazySections || markdown.length > 30000) {
+        debug.log('RenderPipeline', 'Using progressive hydration for large document');
+        await this.renderWithProgressiveHydration(options);
+        return;
+      }
+
+      // Stage 1: Parse markdown to HTML (with worker if available)
+      this.notifyProgressThrottled({
         stage: 'parsing',
         progress: 10,
         message: 'Parsing markdown...',
       });
 
-      const result = await this.converter.convert(markdown);
+      let result: ConversionResult;
+      
+      if (shouldUseWorkers) {
+        try {
+          const taskId = `parse-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const payload: ParseTaskPayload = {
+            markdown,
+            options: {
+              breaks: true,
+              linkify: true,
+              typographer: true,
+            },
+          };
+
+          const workerResult = await workerPool.execute<{ html: string; metadata: ConversionResult['metadata'] }>({
+            type: 'parse',
+            id: taskId,
+            payload,
+            priority: 10,
+          });
+
+          result = {
+            html: workerResult.html,
+            metadata: workerResult.metadata,
+            errors: [],
+          };
+          
+          debug.log('RenderPipeline', 'Parsed markdown in worker');
+        } catch (error) {
+          debug.error('RenderPipeline', 'Worker parsing failed, falling back to sync:', error);
+          result = await this.converter.convert(markdown);
+        }
+      } else {
+        result = await this.converter.convert(markdown);
+      }
 
       if (this.cancelRequested) return;
 
-      // Stage 2: Sanitize HTML
-      this.notifyProgress({
+      // Stage 2: Sanitize HTML (always on main thread for security)
+      this.notifyProgressThrottled({
         stage: 'sanitizing',
         progress: 30,
         message: 'Sanitizing content...',
@@ -64,39 +168,38 @@ export class RenderPipeline {
       if (this.cancelRequested) return;
 
       // Stage 3: Transform (process special blocks)
-      this.notifyProgress({
+      this.notifyProgressThrottled({
         stage: 'transforming',
         progress: 50,
         message: 'Processing content...',
       });
 
-      const transformed = await this.transformContent(sanitized, result);
+      const transformed = await this.transformContent(sanitized, result, preferences);
 
       if (this.cancelRequested) return;
 
       // Stage 4: Insert into DOM
-      // Use <template> element for clean insertion
       const template = document.createElement('template');
       template.innerHTML = transformed;
       
       container.innerHTML = '';
       container.appendChild(template.content);
 
-      // Stage 5: Enhance (add interactive features)
-      this.notifyProgress({
+      // Stage 5: Enhance (add interactive features with parallel workers)
+      this.notifyProgressThrottled({
         stage: 'enhancing',
         progress: 70,
         message: 'Adding interactive features...',
       });
 
       debug.log('RenderPipeline', 'Enhancing content...');
-      await this.enhanceContent(container, result);
+      await this.enhanceContentWithWorkers(container, result, shouldUseWorkers);
       debug.log('RenderPipeline', 'Content enhanced');
 
       if (this.cancelRequested) return;
 
       // Stage 6: Apply theme
-      this.notifyProgress({
+      this.notifyProgressThrottled({
         stage: 'theming',
         progress: 90,
         message: 'Applying theme...',
@@ -106,18 +209,227 @@ export class RenderPipeline {
       await this.applyTheming(container);
       debug.log('RenderPipeline', 'Theme applied successfully');
 
+      // Cache the result if enabled (to service worker)
+      if (useCache && filePath) {
+        try {
+          const cacheKey = await this.getCacheKey(filePath, markdown, theme as ThemeName, preferences);
+
+          const contentHash = await this.generateContentHash(markdown);
+
+          const cachedResult: CachedResult = {
+            html: container.innerHTML,
+            metadata: result.metadata,
+            highlightedBlocks: new Map(),
+            mermaidSVGs: new Map(),
+            timestamp: Date.now(),
+            cacheKey,
+          };
+
+          await this.setCachedResult(cacheKey, cachedResult, filePath, contentHash, theme as ThemeName);
+          debug.log('RenderPipeline', 'Result cached in service worker');
+        } catch (error) {
+          debug.error('RenderPipeline', 'Failed to cache result:', error);
+        }
+      }
+
       // Complete
-      this.notifyProgress({
+      this.notifyProgressThrottled({
         stage: 'complete',
         progress: 100,
         message: 'Rendering complete',
       });
-      debug.log('RenderPipeline', 'Rendering complete');
+      debug.info('RenderPipeline', 'Rendering complete');
     } catch (error) {
       debug.error('RenderPipeline', 'Render error:', error);
       this.showError(container, error);
       throw error;
     }
+  }
+
+  /**
+   * Render from cached result
+   */
+  private async renderFromCache(container: HTMLElement, cached: CachedResult): Promise<void> {
+    // Insert cached HTML
+    container.innerHTML = cached.html;
+
+    // Re-initialize interactive features
+    await this.reinitializeInteractiveFeatures(container);
+
+    this.notifyProgressThrottled({
+      stage: 'complete',
+      progress: 100,
+      message: 'Loaded from cache',
+    });
+  }
+
+  /**
+   * Re-initialize interactive features for cached content
+   */
+  private async reinitializeInteractiveFeatures(container: HTMLElement): Promise<void> {
+    // Re-add copy buttons
+    this.addCopyButtons(container);
+
+    // Re-setup image lazy loading
+    this.setupImageLazyLoading(container);
+
+    // Re-initialize Mermaid diagrams (they may need panzoom reinitialization)
+    const mermaidContainers = container.querySelectorAll('.mermaid-container.mermaid-ready');
+    if (mermaidContainers.length > 0) {
+      try {
+        // Mermaid diagrams should already have SVG from cache
+        // Controls will be re-added automatically when mermaid module loads
+        await import('../renderers/mermaid-renderer');
+      } catch (error) {
+        debug.error('RenderPipeline', 'Failed to reinitialize mermaid:', error);
+      }
+    }
+  }
+
+  /**
+   * Enhance content with parallel worker processing
+   * Optimized: Critical operations first, non-critical during idle time
+   */
+  private async enhanceContentWithWorkers(
+    container: HTMLElement,
+    _result: ConversionResult,
+    useWorkers: boolean
+  ): Promise<void> {
+    // CRITICAL: Apply syntax highlighting to visible blocks first (lazy loaded)
+    if (useWorkers) {
+      debug.log('RenderPipeline', 'Applying syntax highlighting with workers...');
+      await this.applySyntaxHighlightingWithWorkers(container);
+    } else {
+      debug.log('RenderPipeline', 'Applying syntax highlighting...');
+      await this.applySyntaxHighlighting(container);
+    }
+
+    // CRITICAL: Mark Mermaid blocks (actual rendering happens lazily on intersection)
+    debug.log('RenderPipeline', 'Marking Mermaid blocks...');
+    this.markMermaidBlocks(container);
+
+    debug.log('RenderPipeline', 'Syntax highlighting complete');
+
+    // NON-CRITICAL: Schedule remaining enhancements during idle time
+    // This improves perceived performance by not blocking the main render
+    this.scheduleIdleEnhancements(container);
+  }
+
+  /**
+   * Schedule non-critical enhancements during browser idle time
+   */
+  private scheduleIdleEnhancements(container: HTMLElement): void {
+    const runEnhancements = () => {
+      debug.log('RenderPipeline', 'Running idle-time enhancements...');
+      
+      // Batch DOM operations for efficiency
+      this.addCopyButtons(container);
+      this.setupImageLazyLoading(container);
+      this.setupHeadingAnchors(container);
+      
+      debug.log('RenderPipeline', 'Idle-time enhancements complete');
+    };
+
+    // Use requestIdleCallback if available, otherwise setTimeout
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(runEnhancements, { timeout: 100 });
+    } else {
+      setTimeout(runEnhancements, 0);
+    }
+  }
+
+  /**
+   * Apply syntax highlighting using workers (parallel)
+   * Optimized: Uses lazy loading for better perceived performance
+   */
+  private async applySyntaxHighlightingWithWorkers(container: HTMLElement): Promise<void> {
+    // Even with workers available, use lazy loading for instant content display
+    // Only visible code blocks are highlighted immediately, rest on scroll
+    try {
+      const { syntaxHighlighter } = await import('../renderers/syntax-highlighter');
+      syntaxHighlighter.highlightVisible(container);
+    } catch (error) {
+      debug.error('RenderPipeline', 'Syntax highlighting error:', error);
+    }
+  }
+
+  /**
+   * Throttle progress updates to reduce reflows
+   */
+  private notifyProgressThrottled(progress: RenderProgress): void {
+    const now = Date.now();
+    const timeSinceLastUpdate = now - this.lastProgressUpdate;
+
+    // Throttle to max once per 100ms (except for complete/cached stages)
+    if (timeSinceLastUpdate < 100 && progress.stage !== 'complete' && progress.stage !== 'cached') {
+      // Schedule update for later if not already scheduled
+      if (!this.progressUpdateTimer) {
+        this.progressUpdateTimer = window.setTimeout(() => {
+          this.notifyProgress(progress);
+          this.progressUpdateTimer = null;
+          this.lastProgressUpdate = Date.now();
+        }, 100 - timeSinceLastUpdate);
+      }
+      return;
+    }
+
+    this.notifyProgress(progress);
+    this.lastProgressUpdate = now;
+  }
+
+  /**
+   * Get cache key from service worker
+   */
+  private async getCacheKey(
+    filePath: string,
+    content: string,
+    theme: ThemeName,
+    preferences: Record<string, unknown>
+  ): Promise<string> {
+    const response = await chrome.runtime.sendMessage({
+      type: 'CACHE_GENERATE_KEY',
+      payload: { filePath, content, theme, preferences },
+    });
+    return response.key;
+  }
+
+  /**
+   * Get cached result from service worker
+   */
+  private async getCachedResult(key: string): Promise<CachedResult | null> {
+    const response = await chrome.runtime.sendMessage({
+      type: 'CACHE_GET',
+      payload: { key },
+    });
+    return response.result || null;
+  }
+
+  /**
+   * Set cached result in service worker
+   */
+  private async setCachedResult(
+    key: string,
+    result: CachedResult,
+    filePath: string,
+    contentHash: string,
+    theme: ThemeName
+  ): Promise<void> {
+    await chrome.runtime.sendMessage({
+      type: 'CACHE_SET',
+      payload: { key, result, filePath, contentHash, theme },
+    });
+  }
+
+  /**
+   * Generate content hash via service worker
+   */
+  private async generateContentHash(content: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(content);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
   }
 
   /**
@@ -153,9 +465,117 @@ export class RenderPipeline {
 
       container.appendChild(chunkContainer);
 
-      // Yield to browser for responsiveness
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      // Yield to browser for responsiveness using RAF (faster than setTimeout)
+      await new Promise((resolve) => requestAnimationFrame(resolve));
     }
+  }
+
+  /**
+   * Render using progressive hydration (for large files)
+   * PHASE 1: Instant skeleton (< 50ms) - structure with headings
+   * PHASE 2: Progressive hydration - fill in content
+   * PHASE 3: Enhancement - syntax highlighting, mermaid, etc.
+   */
+  private async renderWithProgressiveHydration(options: RenderOptions): Promise<void> {
+    const { container, markdown, preferences = {} } = options;
+    debug.log('RenderPipeline', 'Starting progressive hydration with preferences:', JSON.stringify(preferences));
+
+    // Split markdown into sections
+    const sections = splitIntoSections(markdown);
+    debug.log('RenderPipeline', `Progressive hydration: ${sections.length} sections`);
+
+    // ===================================================================
+    // PHASE 1: Instant Skeleton (< 50ms)
+    // Render all headings + placeholders immediately
+    // This makes scroll position naturally correct!
+    // ===================================================================
+    this.notifyProgressThrottled({
+      stage: 'parsing',
+      progress: 5,
+      message: 'Rendering structure...',
+    });
+
+    const skeletonHtml = SkeletonRenderer.generateSkeleton(sections);
+    container.innerHTML = skeletonHtml;
+
+    debug.log('RenderPipeline', 'Skeleton rendered (structure visible)');
+
+    // At this point, the user sees the full document structure!
+    // Headings are visible, scroll works naturally
+    // No need for scroll restoration!
+    
+    // Notify that content is visible (remove loading overlay)
+    this.notifyProgressThrottled({
+      stage: 'parsing',
+      progress: 10,
+      message: 'Content visible - hydrating...',
+    });
+
+    // Apply theme immediately to skeleton
+    await this.applyTheming(container);
+
+    // ===================================================================
+    // PHASE 2: Progressive Hydration
+    // Fill in actual content for each section
+    // ===================================================================
+    debug.log('RenderPipeline', 'Starting progressive hydration...');
+
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      
+      this.notifyProgressThrottled({
+        stage: 'parsing',
+        progress: 5 + ((i / sections.length) * 70),
+        message: `Hydrating section ${i + 1}/${sections.length}...`,
+      });
+
+      try {
+        // Find the skeleton section element
+        const sectionElement = document.getElementById(section.id);
+        if (!sectionElement || SkeletonRenderer.isHydrated(sectionElement)) {
+          continue;
+        }
+
+        // Convert markdown to HTML
+        const result = await this.converter.convert(section.markdown);
+        const sanitized = await this.sanitizeContent(result);
+        debug.log('RenderPipeline', `Hydrating section ${i}: Transforming content with preferences`, JSON.stringify(preferences));
+        const transformed = await this.transformContent(sanitized, result, preferences);
+
+        // Replace skeleton content with actual content
+        sectionElement.innerHTML = transformed;
+        
+        // Mark as hydrated
+        SkeletonRenderer.markHydrated(sectionElement);
+
+        // Yield to browser to keep UI responsive
+        await new Promise((r) => requestAnimationFrame(r));
+      } catch (error) {
+        debug.error('RenderPipeline', `Failed to hydrate section ${section.id}:`, error);
+      }
+    }
+
+    debug.log('RenderPipeline', 'Progressive hydration complete');
+
+    // ===================================================================
+    // PHASE 3: Enhancement
+    // Add syntax highlighting, mermaid, copy buttons, etc.
+    // ===================================================================
+    this.notifyProgressThrottled({
+      stage: 'enhancing',
+      progress: 80,
+      message: 'Enhancing content...',
+    });
+
+    await this.enhanceContentWithWorkers(container, { html: '', metadata: {} } as ConversionResult, false);
+
+    this.notifyProgressThrottled({
+      stage: 'complete',
+      progress: 100,
+      message: 'Rendering complete',
+    });
+
+    debug.log('RenderPipeline', 'Progressive hydration fully complete');
   }
 
   /**
@@ -186,11 +606,12 @@ export class RenderPipeline {
   /**
    * Stage 3: Transform content (process special blocks)
    */
-  private async transformContent(html: string, result: ConversionResult): Promise<string> {
+  private async transformContent(html: string, result: ConversionResult, preferences: Record<string, unknown> = {}): Promise<string> {
+    debug.log('RenderPipeline', 'Transforming content with preferences:', JSON.stringify(preferences));
     let transformed = html;
 
-    // Add language badges to code blocks
-    transformed = this.addCodeBlockFeatures(transformed, result);
+    // Add language badges and line numbers to code blocks
+    transformed = this.addCodeBlockFeatures(transformed, result, preferences);
 
     // Add lazy loading to images
     transformed = this.addImageLazyLoading(transformed);
@@ -199,27 +620,6 @@ export class RenderPipeline {
     transformed = this.enhanceTables(transformed);
 
     return transformed;
-  }
-
-  /**
-   * Stage 5: Enhance content with interactive features
-   */
-  private async enhanceContent(container: HTMLElement, _result: ConversionResult): Promise<void> {
-    debug.log('RenderPipeline', 'Adding copy buttons...');
-    this.addCopyButtons(container);
-
-    debug.log('RenderPipeline', 'Setting up image lazy loading...');
-    this.setupImageLazyLoading(container);
-
-    debug.log('RenderPipeline', 'Marking Mermaid blocks...');
-    this.markMermaidBlocks(container);
-
-    debug.log('RenderPipeline', 'Setting up heading anchors...');
-    this.setupHeadingAnchors(container);
-
-    debug.log('RenderPipeline', 'Applying syntax highlighting...');
-    await this.applySyntaxHighlighting(container);
-    debug.log('RenderPipeline', 'Syntax highlighting complete');
   }
 
   /**
@@ -246,17 +646,38 @@ export class RenderPipeline {
   /**
    * Add features to code blocks
    */
-  private addCodeBlockFeatures(html: string, _result: ConversionResult): string {
-    // This will be enhanced by syntax highlighter
-    // For now, just add data attributes
+  private addCodeBlockFeatures(html: string, _result: ConversionResult, preferences: Record<string, unknown> = {}): string {
+    const showLineNumbers = !!preferences.lineNumbers;
+    debug.log('RenderPipeline', `addCodeBlockFeatures: showLineNumbers = ${showLineNumbers}`);
+
     return html.replace(
       /<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
       (_match, lang, code) => {
-        return `<div class="code-block-wrapper" data-language="${lang}">
+        let lineNumbersHtml = '';
+        let wrapperClass = 'code-block-wrapper';
+        let contentStart = '';
+        let contentEnd = '';
+
+        if (showLineNumbers) {
+          debug.log('RenderPipeline', 'Generating line numbers for code block');
+          wrapperClass += ' has-line-numbers';
+          // Count lines
+          const lineCount = code.split('\n').length;
+          // Generate line numbers column
+          const numbers = Array.from({ length: lineCount }, (_, i) => `<span>${i + 1}</span>`).join('');
+          lineNumbersHtml = `<div class="line-numbers-rows">${numbers}</div>`;
+          contentStart = '<div class="code-block-content">';
+          contentEnd = '</div>';
+        }
+
+        return `<div class="${wrapperClass}" data-language="${lang}">
           <div class="code-block-header">
             <span class="code-language-badge">${lang}</span>
           </div>
-          <pre><code class="language-${lang}">${code}</code></pre>
+          ${contentStart}
+            ${lineNumbersHtml}
+            <pre><code class="language-${lang}">${code}</code></pre>
+          ${contentEnd}
         </div>`;
       }
     );

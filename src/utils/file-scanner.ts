@@ -110,7 +110,7 @@ export class FileScanner {
     // Return cleanup function
     return () => {
       if (intervalId !== null) {
-        clearInterval(intervalId);
+      clearInterval(intervalId);
       }
     };
   }

@@ -119,24 +119,29 @@ export class MermaidRenderer {
       return;
     }
 
-    // Get mermaid code from global registry
+    // Get mermaid code from global registry or data attribute (fallback for lazy sections)
     const registry = (window as any).__MDVIEW_MERMAID_CODE__ as Map<string, string>;
-    if (!registry || !registry.has(containerId)) {
-      debug.error('MermaidRenderer', `No code found in registry for ${containerId}`);
+    let code = registry?.get(containerId)?.trim();
+    
+    // Fallback: Check if code was stored in data attribute (from previous render)
+    if (!code) {
+      code = container.getAttribute('data-mermaid-code') || '';
+    }
+    
+    if (!code) {
+      debug.error('MermaidRenderer', `No code found in registry or data attribute for ${containerId}`);
       this.showError(container, 'No Mermaid code found');
       return;
     }
-
-    const code = registry.get(containerId)?.trim();
-    debug.log('MermaidRenderer', `Container ${containerId}: code exists:`, !!code, 'length:', code?.length || 0);
     
-    if (!code) {
-      this.showError(container, 'Mermaid code is empty');
-      return;
-    }
+    debug.log('MermaidRenderer', `Container ${containerId}: code exists, length: ${code.length}`);
 
-    // Remove from registry now that we've read it
-    registry.delete(containerId);
+    // Store code in the container as data attribute for potential re-renders
+    container.setAttribute('data-mermaid-code', code);
+    
+    // Remove from registry now that we've stored it in DOM
+    // (Keep it in registry too in case of re-renders before DOM update)
+    // registry.delete(containerId); // Don't delete - keep for lazy sections
 
     // Add to queue if currently rendering
     if (this.isRendering) {
@@ -243,6 +248,8 @@ export class MermaidRenderer {
    * Initialize Panzoom for a diagram
    */
   private initializePanzoom(container: HTMLElement, svg: SVGElement): void {
+    debug.log('MermaidRenderer', `initializePanzoom() called for container: ${container.id}`);
+    
     const panzoomInstance = Panzoom(svg, {
       maxZoom: 10,
       minZoom: 0.1,
@@ -251,8 +258,19 @@ export class MermaidRenderer {
       boundsPadding: 0.1,
     });
 
+    debug.log('MermaidRenderer', `  Panzoom instance created, storing with ID: ${container.id}`);
+    
     // Store instance
     this.panzoomInstances.set(container.id, panzoomInstance);
+    
+    const initialTransform = panzoomInstance.getTransform();
+    debug.log('MermaidRenderer', `  Initial transform: scale=${initialTransform.scale.toFixed(2)}, pos=(${initialTransform.x.toFixed(1)}, ${initialTransform.y.toFixed(1)})`);
+
+    // Listen for transform changes to debug unexpected resets
+    svg.addEventListener('panzoomchange', (() => {
+      const transform = panzoomInstance.getTransform();
+      debug.log('MermaidRenderer', `  Transform changed for ${container.id}: scale=${transform.scale.toFixed(2)}, pos=(${transform.x.toFixed(1)}, ${transform.y.toFixed(1)})`);
+    }) as EventListener);
 
     // Add mouse wheel zoom
     svg.parentElement?.addEventListener('wheel', (e: WheelEvent) => {
@@ -272,7 +290,7 @@ export class MermaidRenderer {
   /**
    * Setup keyboard controls for diagram
    */
-  private setupKeyboardControls(container: HTMLElement, panzoom: PanZoom): void {
+  private setupKeyboardControls(container: HTMLElement, panzoom: PanZoom, maximizeCallback?: () => void): void {
     const handler = (e: KeyboardEvent) => {
       // Only handle if container is focused or hovered
       if (!container.matches(':hover, :focus-within')) {
@@ -306,7 +324,12 @@ export class MermaidRenderer {
           break;
         case 'm':
           e.preventDefault();
-          this.maximize(container.id);
+          // If in maximized view (callback provided), close instead of maximize
+          if (maximizeCallback) {
+            maximizeCallback();
+          } else {
+            this.maximize(container.id);
+          }
           break;
         case 'e':
           e.preventDefault();
@@ -377,6 +400,38 @@ export class MermaidRenderer {
   }
 
   /**
+   * Re-attach event listeners to cloned control buttons
+   * (cloneNode doesn't copy event listeners)
+   */
+  private reattachControls(container: HTMLElement, closeMaximizeCallback?: () => void): void {
+    const controls = container.querySelector('.mermaid-controls');
+    if (!controls) return;
+
+    const buttons = controls.querySelectorAll('.mermaid-control-button');
+    
+    // Define actions for each button (same order as addControls)
+    const actions = [
+      () => this.zoomIn(container.id),
+      () => this.zoomOut(container.id),
+      () => this.resetZoom(container.id),
+      () => this.fitToView(container.id),
+      closeMaximizeCallback ? closeMaximizeCallback : () => this.maximize(container.id), // In maximized view, this closes instead
+      () => this.exportSVG(container.id),
+    ];
+
+    buttons.forEach((button, index) => {
+      // Remove old listeners by cloning the button (clean slate)
+      const newButton = button.cloneNode(true) as HTMLElement;
+      button.parentNode?.replaceChild(newButton, button);
+      
+      // Attach new listener
+      if (actions[index]) {
+        newButton.addEventListener('click', actions[index]);
+      }
+    });
+  }
+
+  /**
    * Zoom in
    */
   zoomIn(containerId: string): void {
@@ -420,68 +475,38 @@ export class MermaidRenderer {
     const svg = container.querySelector('svg');
     if (!svg) return;
 
-    // Reset to 1:1 scale
+    // Reset to 1:1 scale and identity translation
+    // The browser's SVG viewBox + width=100% handles the fitting naturally
     panzoom.zoomAbs(0, 0, 1);
-
-    // Center the diagram at natural size
-    setTimeout(() => {
-      const bbox = (svg as SVGSVGElement).getBBox();
-      const containerRect = container.getBoundingClientRect();
-
-      // Calculate centering offset at 1:1 scale
-      const offsetX = (containerRect.width - bbox.width) / 2;
-      const offsetY = (containerRect.height - bbox.height) / 2;
-
-      panzoom.moveTo(offsetX - bbox.x, offsetY - bbox.y);
-    }, 10);
+    panzoom.moveTo(0, 0);
+    
+    debug.log('MermaidRenderer', `Reset zoom for ${containerId}`);
   }
 
   /**
-   * Fit diagram to view
+   * Fit diagram to view (centered)
    */
   fitToView(containerId: string): void {
-    const container = document.getElementById(containerId);
-    const panzoom = this.panzoomInstances.get(containerId);
-    
-    if (!container || !panzoom) return;
-
-    const svg = container.querySelector('svg');
-    if (!svg) return;
-
-    // Reset transform first to get true dimensions
-    panzoom.zoomAbs(0, 0, 1);
-    panzoom.moveTo(0, 0);
-
-    // Small delay to let reset take effect
-    setTimeout(() => {
-      // Get the true SVG content bounds
-      const bbox = (svg as SVGSVGElement).getBBox();
-      const containerRect = container.getBoundingClientRect();
-
-      // Calculate scale to fit with more generous padding
-      const scaleX = (containerRect.width * 0.9) / bbox.width;
-      const scaleY = (containerRect.height * 0.9) / bbox.height;
-      const scale = Math.min(scaleX, scaleY);
-
-      // Calculate centering offset
-      const scaledWidth = bbox.width * scale;
-      const scaledHeight = bbox.height * scale;
-      const offsetX = (containerRect.width - scaledWidth) / 2;
-      const offsetY = (containerRect.height - scaledHeight) / 2;
-
-      // Apply the transform
-      panzoom.zoomAbs(0, 0, scale);
-      panzoom.moveTo(offsetX - bbox.x * scale, offsetY - bbox.y * scale);
-    }, 10);
+    debug.log('MermaidRenderer', `Fit to view for: ${containerId}`);
+    // "Fit to view" in this context means resetting to the natural
+    // layout where the diagram fits within the container (width=100%)
+    this.resetZoom(containerId);
   }
 
   /**
    * Maximize diagram (fullscreen mode)
    */
   maximize(containerId: string): void {
+    debug.log('MermaidRenderer', `maximize() called for: ${containerId}`);
+    
     const container = document.getElementById(containerId);
-    if (!container) return;
+    if (!container) {
+      debug.error('MermaidRenderer', `Container not found: ${containerId}`);
+      return;
+    }
 
+    debug.log('MermaidRenderer', `  Creating maximize overlay...`);
+    
     // Create overlay
     const overlay = document.createElement('div');
     overlay.className = 'mermaid-maximize-overlay';
@@ -495,6 +520,8 @@ export class MermaidRenderer {
     clone.id = maximizedId;
     clone.classList.add('maximized');
     
+    debug.log('MermaidRenderer', `  Cloned diagram with ID: ${maximizedId}`);
+    
     // Make the clone expand to fill available space
     clone.style.width = '90vw';
     clone.style.height = '90vh';
@@ -504,19 +531,31 @@ export class MermaidRenderer {
     clone.style.alignItems = 'center';
     clone.style.justifyContent = 'center';
 
+    debug.log('MermaidRenderer', `  Appending to DOM...`);
     overlay.appendChild(clone);
     document.body.appendChild(overlay);
 
     const cleanup = () => {
+      // Clean up panzoom instance
       const clonePanzoom = this.panzoomInstances.get(maximizedId);
       if (clonePanzoom) {
         clonePanzoom.dispose();
         this.panzoomInstances.delete(maximizedId);
       }
+      
+      // Clean up keyboard handlers
+      if ((clone as any).__keyboardCleanup) {
+        (clone as any).__keyboardCleanup();
+      }
+      
+      // Remove overlay from DOM
       if (document.body.contains(overlay)) {
         document.body.removeChild(overlay);
       }
     };
+
+    // Re-attach event listeners to cloned control buttons
+    this.reattachControls(clone, cleanup);
 
     // Add close button
     const closeButton = document.createElement('button');
@@ -530,6 +569,8 @@ export class MermaidRenderer {
     // Re-initialize Panzoom for maximized instance
     const svg = clone.querySelector('svg');
     if (svg) {
+      debug.log('MermaidRenderer', `  Found SVG, initializing panzoom...`);
+      
       const svgElement = svg as SVGElement;
       // Make SVG scale to fit
       svgElement.style.width = '100%';
@@ -538,11 +579,23 @@ export class MermaidRenderer {
       svgElement.style.maxHeight = '100%';
       
       this.initializePanzoom(clone, svgElement);
+      debug.log('MermaidRenderer', `  Panzoom initialized for ${maximizedId}`);
       
-      // Fit to view after a short delay
-      setTimeout(() => {
-        this.fitToView(maximizedId);
-      }, 100);
+      // Re-setup keyboard controls for the cloned instance
+      const clonePanzoom = this.panzoomInstances.get(maximizedId);
+      if (clonePanzoom) {
+        this.setupKeyboardControls(clone, clonePanzoom, cleanup);
+        
+        // Center logic: Identity transform + moveTo(0,0)
+        // Since SVG is 100% width/height and preserves aspect ratio, 
+        // this will center the content in the 90vw/90vh container
+        clonePanzoom.zoomAbs(0, 0, 1);
+        clonePanzoom.moveTo(0, 0);
+        
+        debug.log('MermaidRenderer', `  Maximized view centered`);
+      }
+    } else {
+      debug.error('MermaidRenderer', `  No SVG found in cloned container!`);
     }
 
     // Add ESC key handler
@@ -704,4 +757,3 @@ export class MermaidRenderer {
 
 // Export singleton
 export const mermaidRenderer = new MermaidRenderer();
-

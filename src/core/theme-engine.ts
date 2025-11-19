@@ -48,38 +48,55 @@ export class ThemeEngine {
    * Apply theme to document
    */
   async applyTheme(theme: Theme | ThemeName): Promise<void> {
+    console.log(`[ThemeEngine] applyTheme called with:`, typeof theme === 'string' ? theme : theme.name);
+    
     // Load theme if name provided
     const themeObj = typeof theme === 'string' ? await this.loadTheme(theme) : theme;
+    console.log(`[ThemeEngine] Theme loaded/resolved:`, themeObj.name);
 
     // Compile to CSS variables
     const cssVars = this.compileToCSSVariables(themeObj);
-
+    
     // Apply transition class
     const root = document.documentElement;
     root.classList.add('theme-transitioning');
-
-    // Update CSS variables
+    
+    // Update CSS variables on both :root and documentElement for immediate effect
+    console.log(`[ThemeEngine] Applying ${Object.keys(cssVars).length} CSS variables to :root and html`);
     Object.entries(cssVars).forEach(([key, value]) => {
       root.style.setProperty(key, value);
+      // Force immediate style recalculation for critical color variables
+      if (key === '--md-bg' || key === '--md-fg') {
+        document.documentElement.style.setProperty(key, value);
+        document.body.style.setProperty(key, value);
+      }
     });
-
+    
     // Set data attributes
     root.setAttribute('data-theme', themeObj.name);
     root.setAttribute('data-theme-variant', themeObj.variant);
 
+    // Apply background color directly to body and html to prevent white flash
+    document.documentElement.style.backgroundColor = themeObj.colors.background;
+    document.body.style.backgroundColor = themeObj.colors.background;
+    document.documentElement.style.color = themeObj.colors.foreground;
+    document.body.style.color = themeObj.colors.foreground;
+    
     // Update syntax theme
+    console.log(`[ThemeEngine] Updating syntax theme to: ${themeObj.syntaxTheme}`);
     await this.updateSyntaxTheme(themeObj.syntaxTheme);
-
-    // Wait for transition
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Remove transition class
-    root.classList.remove('theme-transitioning');
-
+    
+    // Remove transition class after a brief moment (non-blocking)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        root.classList.remove('theme-transitioning');
+      });
+    });
+    
     // Save current theme
     this.currentTheme = themeObj;
-
-    console.log(`[ThemeEngine] Applied theme: ${themeObj.name}`);
+    
+    console.log(`[ThemeEngine] Successfully applied theme: ${themeObj.name}`);
   }
 
   /**

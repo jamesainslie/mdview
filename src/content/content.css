@@ -119,6 +119,127 @@ body {
   }
 }
 
+/* Subtle progress indicator (top right) */
+#mdview-progress-indicator {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  padding: 8px 12px;
+  background: var(--md-bg);
+  border: 1px solid var(--md-border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+  color: var(--md-fg-muted);
+  z-index: 9998; /* Below loading overlay */
+  opacity: 0.7;
+  transition: opacity 0.3s ease-out;
+  pointer-events: none; /* Non-blocking - click through */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+#mdview-progress-indicator.complete {
+  opacity: 0;
+  transition: opacity 0.5s ease-out 0.3s; /* Fade out after 0.3s delay */
+}
+
+/* Progress bar inside indicator */
+.progress-bar-container {
+  width: 100px;
+  height: 2px;
+  background: var(--md-border);
+  border-radius: 1px;
+  overflow: hidden;
+  margin-top: 4px;
+  opacity: 0.5;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--md-link);
+  transition: width 0.15s ease-out;
+  border-radius: 1px;
+}
+
+/* Progressive Hydration - Sections */
+.mdview-section {
+  margin-bottom: 24px;
+}
+
+/* Skeleton state (before hydration) - NO VISUAL DISTRACTION */
+.mdview-section-skeleton {
+  opacity: 1; /* Full opacity - no fade effect */
+}
+
+/* Hydrated state (after content loaded) */
+.mdview-section-hydrated {
+  opacity: 1;
+}
+
+/* Section placeholder - HIDDEN for clean reading experience */
+.section-placeholder {
+  display: none; /* No shimmer, no distraction - just headings */
+}
+
+/* Legacy: Lazy Section Loading (kept for backwards compat) */
+.mdview-section-placeholder {
+  min-height: 200px;
+  padding: 24px;
+  margin-bottom: 24px;
+  background-color: var(--md-bg);
+  border: 1px dashed var(--md-border);
+  border-radius: 6px;
+}
+
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  color: var(--md-fg-muted);
+}
+
+.placeholder-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.placeholder-loading::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--md-border);
+  border-top-color: var(--md-link);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.mdview-section-error {
+  padding: 16px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: var(--md-fg);
+}
+
+.mdview-section-error p {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: rgb(239, 68, 68);
+}
+
+.mdview-section-error pre {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
 /* Headings */
 h1, h2, h3, h4, h5, h6 {
   color: var(--md-heading);
@@ -249,6 +370,62 @@ pre code {
   font-size: 100%;
 }
 
+/* Syntax highlighting (highlight.js classes) */
+.hljs {
+  display: block;
+  overflow-x: auto;
+  color: var(--md-code-text);
+  background: var(--md-code-bg);
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-link {
+  color: var(--md-code-keyword);
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-name,
+.hljs-type,
+.hljs-attribute,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition,
+.hljs-variable,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: var(--md-code-string);
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion,
+.hljs-meta {
+  color: var(--md-code-comment);
+}
+
+.hljs-function,
+.hljs-number,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-title.class_,
+.hljs-class .hljs-title {
+  color: var(--md-code-function);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
 /* Code blocks with language badge */
 .code-block-wrapper {
   position: relative;
@@ -297,6 +474,58 @@ pre code {
   border: 1px solid var(--md-border);
   border-top: none;
 }
+
+/* Line Numbers */
+.code-block-wrapper.has-line-numbers {
+  display: flex;
+  flex-direction: column;
+}
+
+.code-block-content {
+  display: flex;
+  flex-direction: row; /* Ensure row layout for numbers + code */
+  background-color: var(--md-code-bg);
+  border: 1px solid var(--md-border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+
+.code-block-wrapper.has-line-numbers pre {
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 16px; /* Ensure padding matches */
+}
+
+.line-numbers-rows {
+  display: block; /* Changed from flex column to block for better alignment */
+  padding: 16px 0; /* Vertical padding must match pre block */
+  background-color: var(--md-bg-secondary, rgba(0, 0, 0, 0.02)); /* Fallback color */
+  border-right: 1px solid var(--md-border);
+  text-align: right;
+  user-select: none;
+  min-width: 3.5em; /* Ensure minimum width */
+}
+
+.line-numbers-rows span {
+  display: block;
+  padding: 0 8px;
+  color: var(--md-fg-muted, #6e7781); /* Fallback color */
+  font-family: var(--md-font-family-code);
+  font-size: 85%; /* Must match pre code font size */
+  line-height: 1.5; /* Must match pre line-height */
+  white-space: nowrap;
+}
+
+/* Ensure pre code inherits line height for alignment */
+pre code {
+  line-height: 1.5;
+  display: block; /* Ensure block display */
+}
+
 
 /* Blockquotes */
 blockquote {
@@ -482,9 +711,9 @@ img[loading="lazy"].loaded {
   max-width: 90vw;
   max-height: 90vh;
   border: 2px solid var(--md-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative; /* For panzoom positioning */
+  overflow: hidden; /* Contain the SVG */
+  /* Removed flexbox centering - panzoom will handle positioning */
 }
 
 .mermaid-maximize-overlay .mermaid-container.maximized {
@@ -493,16 +722,19 @@ img[loading="lazy"].loaded {
 }
 
 .mermaid-maximize-overlay .mermaid-rendered {
+  position: absolute; /* Position absolutely within container */
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   min-height: auto;
 }
 
 .mermaid-maximize-overlay .mermaid-rendered svg {
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
+  /* Let SVG keep its natural size for panzoom to work with */
+  /* Panzoom will handle scaling and positioning */
+  max-width: none;
+  max-height: none;
 }
 
 .mermaid-close-button {
@@ -646,4 +878,3 @@ img[loading="lazy"].loaded {
     padding: 0 20px;
   }
 }
-
