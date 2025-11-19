@@ -54,13 +54,13 @@ class MDViewContentScript {
       await this.loadState();
 
       // Now we can log with proper debug mode
-      debug.log('MDView', '=== INITIALIZATION STARTED ===');
+      debug.info('MDView', '=== INITIALIZATION STARTED ===');
       debug.log('MDView', `URL: ${window.location.href}`);
       debug.log('MDView', `Document ready state: ${document.readyState}`);
       debug.log('MDView', `Debug mode enabled: ${this.state?.preferences.debug}`);
       debug.log('MDView', `Auto-reload enabled: ${this.state?.preferences.autoReload}`);
       debug.log('MDView', 'Content script initializing...');
-      debug.log('MDView', 'Markdown file detected:', FileScanner.getFilePath());
+      debug.info('MDView', 'Markdown file detected:', FileScanner.getFilePath());
 
       // Read file content
       debug.log('MDView', 'Reading file content...');
@@ -94,11 +94,24 @@ class MDViewContentScript {
       document.body.appendChild(loadingDiv);
       debug.log('MDView', 'Loading indicator created and appended to body');
 
-      // Force a reflow and small delay to ensure loading indicator is painted
+      // Create subtle progress indicator (top right corner)
+      const progressIndicator = document.createElement('div');
+      progressIndicator.id = 'mdview-progress-indicator';
+      progressIndicator.innerHTML = `
+        <div class="progress-text">Rendering... 0%</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" style="width: 0%"></div>
+        </div>
+      `;
+      document.body.appendChild(progressIndicator);
+      debug.log('MDView', 'Progress indicator created');
+
+      // Force a reflow to ensure loading indicator is painted
       void loadingDiv.offsetHeight;
-      debug.log('MDView', 'Reflow forced, waiting for paint...');
-      await new Promise(resolve => setTimeout(resolve, 50)); // Give browser time to paint
-      debug.log('MDView', 'Loading indicator should now be visible');
+      debug.log('MDView', 'Reflow forced, ensuring paint...');
+      // Use requestAnimationFrame for faster, non-blocking paint guarantee
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      debug.log('MDView', 'Loading indicator painted');
 
       // Create container
       debug.log('MDView', 'Creating render container...');
@@ -108,10 +121,9 @@ class MDViewContentScript {
       document.body.appendChild(container);
       debug.log('MDView', 'Container created and appended to body');
 
-      // Track when loading started to ensure minimum display time
+      // Track when loading started
       const loadingStartTime = Date.now();
-      const MIN_LOADING_TIME = 150; // Minimum 150ms to ensure visibility
-      debug.log('MDView', `Loading started at: ${loadingStartTime}, minimum display time: ${MIN_LOADING_TIME}ms`);
+      debug.log('MDView', `Loading started at: ${loadingStartTime}`);
 
       // Listen for messages from background
       debug.log('MDView', 'Setting up message listener...');
@@ -125,46 +137,72 @@ class MDViewContentScript {
       // Set up progress callback
       debug.log('MDView', 'Setting up progress callback...');
       const cleanup = renderPipeline.onProgress((progress) => {
-        const progressText = `${progress.message} (${Math.round(progress.progress)}%)`;
-        loadingDiv.textContent = progressText;
-        debug.log('MDView', `Progress update: ${progressText}`);
+        const percentage = Math.round(progress.progress);
+        
+        // Update subtle progress indicator
+        const progressText = progressIndicator.querySelector('.progress-text');
+        const progressBarFill = progressIndicator.querySelector('.progress-bar-fill') as HTMLElement;
+        
+        if (progressText) {
+          progressText.textContent = `${percentage}%`;
+        }
+        if (progressBarFill) {
+          progressBarFill.style.width = `${percentage}%`;
+        }
+        
+        debug.log('MDView', `Progress: ${percentage}% - ${progress.message}`);
+        
+        // Hide loading overlay as soon as skeleton is rendered (progress > 5%)
+        // This lets users start reading immediately!
+        if (progress.progress > 5 && loadingDiv.style.display !== 'none') {
+          loadingDiv.style.display = 'none';
+          debug.log('MDView', 'Loading overlay hidden - content visible');
+        }
+        
+        // Mark progress indicator as complete when done
+        if (progress.progress >= 100) {
+          progressIndicator.classList.add('complete');
+          // Remove after fade out
+          setTimeout(() => progressIndicator.remove(), 1000);
+        }
       });
       debug.log('MDView', 'Progress callback registered');
 
-      // Render the markdown
+      // Apply initial theme BEFORE starting render to avoid flash
+      debug.log('MDView', 'Applying initial theme...');
+      const startTime = Date.now();
+      await this.applyInitialTheme();
+      debug.log('MDView', `Initial theme applied in ${Date.now() - startTime}ms`);
+
+      // Render the markdown with cache and worker support
       const isProgressive = fileSize > 500000;
+      const filePath = FileScanner.getFilePath();
+      const theme = this.state?.preferences.theme || 'github-light';
+      const preferences = this.state?.preferences || {};
+      
+      debug.log('MDView', `Starting render with theme: ${theme} and preferences:`, JSON.stringify(preferences));
       debug.log('MDView', `Starting render - file size: ${fileSize} bytes, progressive: ${isProgressive}`);
+      debug.log('MDView', `Using cache and workers for file: ${filePath}`);
       
       await renderPipeline.render({
         container,
         markdown: content,
         progressive: isProgressive,
+        filePath,
+        theme,
+        preferences,
+        useCache: true,
+        useWorkers: true,
       });
       
       const renderTime = Date.now() - loadingStartTime;
       debug.log('MDView', `Rendering completed in ${renderTime}ms`);
-
-      // Ensure loading indicator is visible for minimum time
-      const loadingElapsed = Date.now() - loadingStartTime;
-      if (loadingElapsed < MIN_LOADING_TIME) {
-        const waitTime = MIN_LOADING_TIME - loadingElapsed;
-        debug.log('MDView', `Rendering finished too quickly (${loadingElapsed}ms), waiting additional ${waitTime}ms for minimum display time`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        debug.log('MDView', 'Minimum display time reached');
-      } else {
-        debug.log('MDView', `Rendering took ${loadingElapsed}ms, minimum time already exceeded`);
-      }
 
       // Clean up progress callback and remove loading indicator
       debug.log('MDView', 'Cleaning up progress callback and removing loading indicator...');
       cleanup();
       loadingDiv.remove();
       debug.log('MDView', 'Loading indicator removed');
-
-      // Apply initial theme after rendering completes
-      debug.log('MDView', 'Applying initial theme...');
-      await this.applyInitialTheme();
-      debug.log('MDView', 'Initial theme applied');
 
       // Set up auto-reload if enabled (after initial render completes)
       if (this.state?.preferences.autoReload) {
@@ -175,15 +213,21 @@ class MDViewContentScript {
       }
 
       const totalTime = Date.now() - initStartTime;
-      debug.log('MDView', `=== INITIALIZATION COMPLETED SUCCESSFULLY in ${totalTime}ms ===`);
+      debug.info('MDView', `=== INITIALIZATION COMPLETED SUCCESSFULLY in ${totalTime}ms ===`);
     } catch (error) {
       debug.error('MDView', 'Initialization error:', error);
       
-      // Ensure loading overlay is removed even on error
+      // Ensure loading overlay and progress indicator are removed even on error
       const loadingOverlay = document.getElementById('mdview-loading-overlay');
       if (loadingOverlay) {
         loadingOverlay.remove();
         debug.log('MDView', 'Loading overlay removed after error');
+      }
+      
+      const progressIndicator = document.getElementById('mdview-progress-indicator');
+      if (progressIndicator) {
+        progressIndicator.remove();
+        debug.log('MDView', 'Progress indicator removed after error');
       }
       
       this.showError('Failed to initialize MDView', error);
@@ -197,7 +241,11 @@ class MDViewContentScript {
       debug.log('MDView', 'State loaded:', this.state);
       // Update debug mode based on loaded state
       if (this.state) {
-        debug.setDebugMode(this.state.preferences.debug);
+        if (this.state.preferences.logLevel) {
+          debug.setLogLevel(this.state.preferences.logLevel);
+        } else if (this.state.preferences.debug) {
+          debug.setDebugMode(this.state.preferences.debug);
+        }
       }
     } catch (error) {
       debug.error('MDView', 'Failed to load state:', error);
@@ -212,6 +260,7 @@ class MDViewContentScript {
           autoReload: true,
           lineNumbers: false,
           syncTabs: false,
+          logLevel: 'error',
           debug: false,
         },
         document: {
@@ -251,24 +300,67 @@ class MDViewContentScript {
   private setupAutoReload(): void {
     debug.log('MDView', 'Setting up auto-reload...');
     
+    // Prevent reload loops: don't allow reloads for first 2 seconds after page load
+    const pageLoadTime = Date.now();
+    const MIN_TIME_BEFORE_RELOAD = 2000; // 2 seconds
+    
+    // Track reload attempts to prevent loops
+    const RELOAD_LIMIT = 3;
+    const reloadKey = 'mdview-reload-count';
+    const reloadTimeKey = 'mdview-last-reload';
+    
+    // Check if we're in a reload loop
+    const lastReloadTime = parseInt(sessionStorage.getItem(reloadTimeKey) || '0');
+    const reloadCount = parseInt(sessionStorage.getItem(reloadKey) || '0');
+    const timeSinceLastReload = Date.now() - lastReloadTime;
+    
+    // If we've reloaded too many times in quick succession, disable auto-reload
+    if (reloadCount >= RELOAD_LIMIT && timeSinceLastReload < 5000) {
+      debug.log('MDView', `⚠️ Auto-reload disabled: detected ${reloadCount} reloads in 5 seconds (reload loop protection)`);
+      sessionStorage.removeItem(reloadKey);
+      sessionStorage.removeItem(reloadTimeKey);
+      return;
+    }
+    
+    // Reset counter if it's been a while
+    if (timeSinceLastReload > 10000) {
+      sessionStorage.setItem(reloadKey, '0');
+    }
+    
     // Use a debounced file watcher to prevent rapid reloads
     let reloadTimeout: number | null = null;
     
     const debouncedReload = () => {
+      // Don't reload too soon after page load
+      const timeSincePageLoad = Date.now() - pageLoadTime;
+      if (timeSincePageLoad < MIN_TIME_BEFORE_RELOAD) {
+        debug.log('MDView', `Ignoring file change (page loaded ${timeSincePageLoad}ms ago, need ${MIN_TIME_BEFORE_RELOAD}ms)`);
+        return;
+      }
+      
       if (reloadTimeout) {
         clearTimeout(reloadTimeout);
       }
       
       reloadTimeout = window.setTimeout(() => {
-        debug.log('MDView', 'File changed, reloading...');
+        // Update reload tracking
+        const currentCount = parseInt(sessionStorage.getItem(reloadKey) || '0');
+        sessionStorage.setItem(reloadKey, (currentCount + 1).toString());
+        sessionStorage.setItem(reloadTimeKey, Date.now().toString());
+        
+        debug.info('MDView', 'File changed, reloading...');
         window.location.reload();
-      }, 300); // 300ms debounce
+      }, 500); // 500ms debounce (increased from 300ms)
     };
 
-    // Set up file watcher with cleanup
-    this.autoReloadCleanup = FileScanner.watchFile(debouncedReload, 1000);
+    // Delay starting the file watcher to let page fully stabilize
+    // This prevents false positives during scroll restoration, etc.
+    window.setTimeout(() => {
+      this.autoReloadCleanup = FileScanner.watchFile(debouncedReload, 1000);
+      debug.log('MDView', 'Auto-reload file watcher started');
+    }, 1000); // Wait 1 second before starting to watch
     
-    debug.log('MDView', 'Auto-reload enabled');
+    debug.log('MDView', 'Auto-reload enabled (watcher will start in 1s)');
   }
 
   /**
@@ -326,12 +418,13 @@ class MDViewContentScript {
    */
   private async handleApplyTheme(themeName: string): Promise<void> {
     try {
-      debug.log('MDView', `Applying theme: ${themeName}`);
+      debug.log('MDView', `[ContentScript] Received request to apply theme: ${themeName}`);
       const { themeEngine } = await import('../core/theme-engine');
+      debug.log('MDView', `[ContentScript] Theme engine imported, calling applyTheme`);
       await themeEngine.applyTheme(themeName as import('../types').ThemeName);
-      debug.log('MDView', 'Theme applied successfully');
+      debug.log('MDView', '[ContentScript] Theme applied successfully via engine');
     } catch (error) {
-      debug.error('MDView', 'Failed to apply theme:', error);
+      debug.error('MDView', '[ContentScript] Failed to apply theme:', error);
       throw error;
     }
   }
@@ -344,7 +437,9 @@ class MDViewContentScript {
       debug.log('MDView', 'Handling preferences update:', preferences);
       
       // Update debug mode if it changed
-      if (preferences.debug !== undefined) {
+      if (preferences.logLevel !== undefined) {
+        debug.setLogLevel(preferences.logLevel);
+      } else if (preferences.debug !== undefined) {
         debug.setDebugMode(preferences.debug);
       }
 
@@ -356,9 +451,24 @@ class MDViewContentScript {
         }
       }
 
+      // Check for structural changes that require re-render
+      let needsReload = false;
+      debug.log('MDView', `[ContentScript] Updating preferences. Old lineNumbers: ${this.state?.preferences.lineNumbers}, New lineNumbers: ${preferences.lineNumbers}`);
+      
+      if (preferences.lineNumbers !== undefined && this.state && preferences.lineNumbers !== this.state.preferences.lineNumbers) {
+        debug.log('MDView', 'Line numbers preference changed, reloading page to re-render...');
+        needsReload = true;
+      }
+
       // Update state
       if (this.state) {
         this.state.preferences = { ...this.state.preferences, ...preferences };
+      }
+
+      if (needsReload) {
+         debug.log('MDView', '[ContentScript] Triggering reload for structural change');
+         window.location.reload();
+         return;
       }
 
       debug.log('MDView', 'Preferences updated successfully');
@@ -430,5 +540,5 @@ if (document.readyState === 'loading') {
   });
 }
 
-debug.log('MDView', 'Content script loaded');
+debug.info('MDView', 'Content script loaded');
 
