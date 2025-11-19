@@ -4,14 +4,25 @@
   "version": "1.0.0",
   "description": "Beautiful markdown file viewer with themes, syntax highlighting, and interactive Mermaid diagrams",
   "permissions": ["storage", "scripting"],
-  "host_permissions": ["file:///*"],
+  "host_permissions": [
+    "file:///*",
+    "http://*/*",
+    "https://*/*"
+  ],
   "background": {
     "service_worker": "src/background/service-worker.ts",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["file:///*.md", "file:///*.markdown"],
+      "matches": [
+        "file:///*.md", 
+        "file:///*.markdown",
+        "http://*/*.md",
+        "http://*/*.markdown",
+        "https://*/*.md",
+        "https://*/*.markdown"
+      ],
       "js": ["src/content/content-script.ts"],
       "run_at": "document_start"
     }

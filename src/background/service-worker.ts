@@ -258,6 +258,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true });
           break;
 
+        case 'CHECK_FILE_CHANGED': {
+          const { url, lastHash } = message.payload;
+          try {
+             const response = await fetch(url);
+             if (!response.ok) {
+                sendResponse({ changed: false, error: `Fetch failed: ${response.status}` });
+                break;
+             }
+             
+             const text = await response.text();
+             
+             // Compute hash (simple djb2-like or similar since we don't have crypto.subtle here easily without async)
+             // Wait, we can use crypto.subtle in service workers!
+             const msgBuffer = new TextEncoder().encode(text);
+             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+             const hashArray = Array.from(new Uint8Array(hashBuffer));
+             const currentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+             
+             const changed = currentHash !== lastHash;
+             sendResponse({ changed, newHash: currentHash });
+          } catch (error) {
+             console.error('[MDView-Background] File check failed:', error);
+             sendResponse({ changed: false, error: String(error) });
+          }
+          break;
+        }
+
         default:
           console.warn('[MDView] Unknown message type:', message.type);
           sendResponse({ error: 'Unknown message type' });

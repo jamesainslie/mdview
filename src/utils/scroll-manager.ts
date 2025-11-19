@@ -40,7 +40,7 @@ export class ScrollManager {
 
       try {
         sessionStorage.setItem(ScrollManager.STORAGE_KEY, JSON.stringify(state));
-        debug.log('ScrollManager', `Saved scroll position: ${state.position}px, section: ${visibleSectionId || 'none'}`);
+        debug.debug('ScrollManager', `Saved scroll position: ${state.position}px, section: ${visibleSectionId || 'none'}`);
       } catch (error) {
         debug.error('ScrollManager', 'Failed to save scroll position:', error);
       }
@@ -60,12 +60,12 @@ export class ScrollManager {
       // Only restore if it's for the same file and recent
       const age = Date.now() - state.timestamp;
       if (state.filePath !== this.filePath || age > ScrollManager.MAX_AGE) {
-        debug.log('ScrollManager', 'Ignoring stale or mismatched scroll state');
+        debug.debug('ScrollManager', 'Ignoring stale or mismatched scroll state');
         sessionStorage.removeItem(ScrollManager.STORAGE_KEY);
         return null;
       }
 
-      debug.log('ScrollManager', `Found saved scroll position: ${state.position}px, section: ${state.visibleSectionId || 'none'}`);
+      debug.info('ScrollManager', `Found saved scroll position: ${state.position}px, section: ${state.visibleSectionId || 'none'}`);
       return state;
     } catch (error) {
       debug.error('ScrollManager', 'Failed to get scroll position:', error);
@@ -77,14 +77,14 @@ export class ScrollManager {
    * Restore scroll position
    */
   restorePosition(state: ScrollState): void {
-    debug.log('ScrollManager', `Restoring scroll position to ${state.position}px`);
+    debug.info('ScrollManager', `Restoring scroll position to ${state.position}px`);
 
     // Try to scroll to the section first (more reliable)
     if (state.visibleSectionId) {
       const section = document.querySelector(`[data-section-id="${state.visibleSectionId}"]`);
       if (section) {
         section.scrollIntoView({ behavior: 'auto' });
-        debug.log('ScrollManager', `Scrolled to section: ${state.visibleSectionId}`);
+        debug.debug('ScrollManager', `Scrolled to section: ${state.visibleSectionId}`);
         
         // Clear the saved position immediately after restoring
         // This prevents re-restoration on subsequent operations
@@ -158,7 +158,7 @@ export class ScrollManager {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    debug.log('ScrollManager', 'Started tracking scroll position');
+    debug.debug('ScrollManager', 'Started tracking scroll position');
 
     // Return cleanup function
     return () => {
@@ -166,7 +166,7 @@ export class ScrollManager {
       if (this.saveTimeout) {
         clearTimeout(this.saveTimeout);
       }
-      debug.log('ScrollManager', 'Stopped tracking scroll position');
+      debug.debug('ScrollManager', 'Stopped tracking scroll position');
     };
   }
 }

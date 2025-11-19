@@ -70,21 +70,21 @@ export class CacheManager {
     const entry = this.cache.get(key);
 
     if (!entry) {
-      debug.log('CacheManager', 'Cache miss for key:', key.substring(0, 8));
+      debug.info('CacheManager', 'Cache miss for key:', key.substring(0, 8));
       return null;
     }
 
     // Check if expired
     const age = Date.now() - entry.result.timestamp;
     if (age > this.maxAge) {
-      debug.log('CacheManager', 'Cache expired for key:', key.substring(0, 8));
+      debug.info('CacheManager', 'Cache expired for key:', key.substring(0, 8));
       this.cache.delete(key);
       return null;
     }
 
     // Update last accessed time
     entry.lastAccessed = Date.now();
-    debug.log('CacheManager', 'Cache hit for key:', key.substring(0, 8));
+    debug.info('CacheManager', 'Cache hit for key:', key.substring(0, 8));
 
     return entry.result;
   }
@@ -115,7 +115,7 @@ export class CacheManager {
     this.cache.set(key, entry);
     this.fileHashes.set(filePath, contentHash);
 
-    debug.log('CacheManager', `Cached result for key: ${key.substring(0, 8)}, size: ${this.cache.size}/${this.maxSize}`);
+    debug.info('CacheManager', `Cached result for key: ${key.substring(0, 8)}, size: ${this.cache.size}/${this.maxSize}`);
   }
 
   /**
@@ -132,7 +132,7 @@ export class CacheManager {
       if (!hasOtherEntries) {
         this.fileHashes.delete(entry.filePath);
       }
-      debug.log('CacheManager', 'Invalidated cache key:', key.substring(0, 8));
+      debug.info('CacheManager', 'Invalidated cache key:', key.substring(0, 8));
     }
   }
 
@@ -148,7 +148,7 @@ export class CacheManager {
       }
     }
     this.fileHashes.delete(filePath);
-    debug.log('CacheManager', `Invalidated ${invalidated} entries for path:`, filePath);
+    debug.info('CacheManager', `Invalidated ${invalidated} entries for path:`, filePath);
   }
 
   /**
@@ -178,7 +178,7 @@ export class CacheManager {
     const size = this.cache.size;
     this.cache.clear();
     this.fileHashes.clear();
-    debug.log('CacheManager', `Cleared ${size} cache entries`);
+    debug.info('CacheManager', `Cleared ${size} cache entries`);
   }
 
   /**
@@ -222,7 +222,7 @@ export class CacheManager {
 
     if (oldestKey) {
       this.invalidate(oldestKey);
-      debug.log('CacheManager', 'Evicted oldest entry:', oldestKey.substring(0, 8));
+      debug.info('CacheManager', 'Evicted oldest entry:', oldestKey.substring(0, 8));
     }
   }
 

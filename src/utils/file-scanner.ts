@@ -1,3 +1,5 @@
+import { debug } from './debug-logger';
+
 /**
  * File Scanner Utility
  * Detects and validates markdown files by extension and MIME type
@@ -14,19 +16,28 @@ export class FileScanner {
     const url = window.location.href;
     const pathname = window.location.pathname;
 
-    // Check if file:// protocol
-    if (!url.startsWith('file://')) {
+    // Check protocol
+    const isLocal = url.startsWith('file://');
+    const isWeb = url.startsWith('http://') || url.startsWith('https://');
+
+    if (!isLocal && !isWeb) {
+      return false;
+    }
+
+    // Check by MIME type first if available (authoritative for web)
+    const contentType = document.contentType;
+    if (contentType && this.MARKDOWN_MIME_TYPES.includes(contentType)) {
+      return true;
+    }
+    
+    // For web, if content type is explicitly HTML, do not activate
+    // (prevents rendering on GitHub UI pages which end in .md)
+    if (isWeb && (contentType === 'text/html' || contentType === 'application/xhtml+xml')) {
       return false;
     }
 
     // Check by extension
     if (this.hasMarkdownExtension(pathname)) {
-      return true;
-    }
-
-    // Check by MIME type if available
-    const contentType = document.contentType;
-    if (contentType && this.MARKDOWN_MIME_TYPES.includes(contentType)) {
       return true;
     }
 
@@ -49,68 +60,95 @@ export class FileScanner {
   }
 
   /**
-   * Read file content from the page
-   * For file:// URLs, the content is in the DOM as plain text
+   * Read file content from the page or source
+   * For file:// URLs, the content is in the DOM as plain text initially.
+   * After rendering (or for updates), we use a hidden iframe hack to read local files
+   * because direct fetch() is blocked by CORS for file:// URLs.
    */
-  static async readFileContent(): Promise<string> {
+  static async readFileContent(forceFetch = false): Promise<string> {
     // For file:// URLs, Chrome displays the content in a <pre> tag
-    const pre = document.querySelector('pre');
-    if (pre) {
-      return pre.textContent || '';
+    // Initial load check
+    if (!forceFetch) {
+      const pre = document.querySelector('pre');
+      if (pre) {
+        return pre.textContent || '';
+      }
+      // If body is not cleared yet
+      if (!document.getElementById('mdview-container')) {
+         return document.body.textContent || '';
+      }
     }
-
-    // Fallback: try to get body text content
+    
+    // If we need to force fetch (watch mode) or if main DOM is overwritten,
+    // we can't use fetch() due to CORS on file://. 
+    // This method is only called by watchFile which handles the iframe logic separately.
+    // But if we need a one-off read... we can't easily do it without the iframe.
+    
+    // Fallback: if this is called unexpectedly with forceFetch outside of watchFile context,
+    // we try to read whatever is in the DOM, which might be stale/rendered.
+    // Ideally, watchFile should handle the source reading itself via iframe.
     return document.body.textContent || '';
   }
 
   /**
-   * Monitor file changes using polling
-   * Note: File System API has limited support for file:// URLs
+   * Generate hash for content comparison
    */
-  static watchFile(callback: () => void, interval = 1000): () => void {
-    let lastContent = '';
+  static async generateHash(content: string): Promise<string> {
+    const msgBuffer = new TextEncoder().encode(content);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /**
+   * Monitor file changes using polling via background script delegation
+   * This avoids CORS issues with fetching file:// URLs from content scripts.
+   */
+  static watchFile(initialHash: string, callback: () => void, interval = 1000): () => void {
+    let lastHash = initialHash;
     let intervalId: number | null = null;
-    let isInitialized = false;
+    const fileUrl = window.location.href;
+
+    debug.info('FileScanner', `Starting background-delegated file watcher for ${fileUrl}`);
 
     const checkForChanges = async () => {
       try {
-        const currentContent = await this.readFileContent();
+        debug.log('FileScanner', 'Checking for file changes via background...');
         
-        // Skip the first check (initialization)
-        if (!isInitialized) {
-          lastContent = currentContent;
-          isInitialized = true;
-          return;
+        const response = await chrome.runtime.sendMessage({
+          type: 'CHECK_FILE_CHANGED',
+          payload: {
+            url: fileUrl,
+            lastHash
+          }
+        });
+
+        if (response.error) {
+           debug.warn('FileScanner', 'Background check error:', response.error);
+           return;
         }
-        
-        // Only trigger callback if content actually changed
-        if (currentContent !== lastContent) {
-          lastContent = currentContent;
+
+        if (response.changed) {
+          debug.info('FileScanner', 'File change detected (hash mismatch)');
+          if (response.newHash) {
+             lastHash = response.newHash;
+          }
           callback();
+        } else {
+          debug.log('FileScanner', 'No change detected');
         }
       } catch (error) {
-        console.error('Error checking file changes:', error);
+        debug.error('FileScanner', 'Error communicating with background:', error);
       }
     };
 
-    // Initialize immediately before starting interval
-    this.readFileContent()
-      .then((content) => {
-        lastContent = content;
-        isInitialized = true;
-        // Start interval after initialization
-        intervalId = window.setInterval(checkForChanges, interval);
-      })
-      .catch((error) => {
-        console.error('Error initializing file watcher:', error);
-        // Start interval anyway to allow recovery
-        intervalId = window.setInterval(checkForChanges, interval);
-      });
+    // Start polling
+    intervalId = window.setInterval(checkForChanges, interval);
 
     // Return cleanup function
     return () => {
       if (intervalId !== null) {
-      clearInterval(intervalId);
+        clearInterval(intervalId);
       }
     };
   }

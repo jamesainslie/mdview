@@ -32,7 +32,7 @@ export class WorkerPool {
     this.poolSize = options.poolSize || navigator.hardwareConcurrency || 4;
     this.maxQueueSize = options.maxQueueSize || 100;
 
-    debug.log('WorkerPool', `Creating pool with ${this.poolSize} workers`);
+    debug.debug('WorkerPool', `Creating pool with ${this.poolSize} workers`);
   }
 
   /**
@@ -47,7 +47,7 @@ export class WorkerPool {
 
     // Check if we're on a file:// URL - workers don't work there
     if (window.location.protocol === 'file:') {
-      debug.log('WorkerPool', 'Skipping workers on file:// URLs (Chrome restriction) - using optimized sync rendering');
+      debug.warn('WorkerPool', 'Skipping workers on file:// URLs (Chrome restriction) - using optimized sync rendering');
       throw new Error('Workers not available on file:// URLs');
     }
 
@@ -55,7 +55,7 @@ export class WorkerPool {
       // Import worker module (works on http:// and https:// URLs)
       const RenderWorker = await import('./render-worker?worker');
       
-      debug.log('WorkerPool', `Creating pool with ${this.poolSize} workers`);
+      debug.debug('WorkerPool', `Creating pool with ${this.poolSize} workers`);
       
       for (let i = 0; i < this.poolSize; i++) {
         const worker = new RenderWorker.default();
@@ -66,11 +66,11 @@ export class WorkerPool {
         this.workers.push(worker);
         this.activeTasksPerWorker.set(worker, 0);
 
-        debug.log('WorkerPool', `Worker ${i + 1}/${this.poolSize} initialized`);
+        debug.debug('WorkerPool', `Worker ${i + 1}/${this.poolSize} initialized`);
       }
 
       this.initialized = true;
-      debug.log('WorkerPool', '✅ Worker pool ready!');
+      debug.info('WorkerPool', '✅ Worker pool ready!');
     } catch (error) {
       debug.error('WorkerPool', 'Failed to initialize worker pool:', error);
       throw error;
@@ -136,7 +136,7 @@ export class WorkerPool {
       debug.error('WorkerPool', `Task ${response.id} failed:`, response.error);
       pendingTask.reject(new Error(response.error));
     } else {
-      debug.log('WorkerPool', `Task ${response.id} completed`);
+      debug.debug('WorkerPool', `Task ${response.id} completed`);
       pendingTask.resolve(response.result);
     }
 
@@ -197,7 +197,7 @@ export class WorkerPool {
     // Send task to worker
     worker.postMessage(pendingTask.task);
 
-    debug.log('WorkerPool', `Dispatched task ${pendingTask.task.id} (type: ${pendingTask.task.type})`);
+    debug.debug('WorkerPool', `Dispatched task ${pendingTask.task.id} (type: ${pendingTask.task.type})`);
   }
 
   /**
@@ -214,7 +214,7 @@ export class WorkerPool {
     }
 
     this.taskQueue.splice(insertIndex, 0, pendingTask);
-    debug.log('WorkerPool', `Queued task ${pendingTask.task.id}, queue size: ${this.taskQueue.length}`);
+    debug.debug('WorkerPool', `Queued task ${pendingTask.task.id}, queue size: ${this.taskQueue.length}`);
   }
 
   /**
@@ -260,7 +260,7 @@ export class WorkerPool {
    * Terminate all workers
    */
   terminate(): void {
-    debug.log('WorkerPool', 'Terminating worker pool');
+    debug.info('WorkerPool', 'Terminating worker pool');
 
     // Reject all pending tasks
     for (const pendingTask of this.taskCallbacks.values()) {
@@ -282,7 +282,7 @@ export class WorkerPool {
     this.activeTasksPerWorker.clear();
     this.initialized = false;
 
-    debug.log('WorkerPool', 'Worker pool terminated');
+    debug.info('WorkerPool', 'Worker pool terminated');
   }
 }
 

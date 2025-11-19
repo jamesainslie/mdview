@@ -55,7 +55,7 @@ body {
 }
 
 #mdview-container {
-  max-width: 980px;
+  max-width: var(--md-max-width, 980px);
   margin: 0 auto;
   padding: 45px;
 }

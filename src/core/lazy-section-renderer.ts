@@ -30,7 +30,7 @@ export class LazySectionRenderer {
     const { rootMargin = '500px', threshold = 0.01 } = options;
 
     if (!('IntersectionObserver' in window)) {
-      debug.log('LazySectionRenderer', 'IntersectionObserver not supported, will render all immediately');
+      debug.warn('LazySectionRenderer', 'IntersectionObserver not supported, will render all immediately');
       return;
     }
 
@@ -54,7 +54,7 @@ export class LazySectionRenderer {
       }
     );
 
-    debug.log('LazySectionRenderer', `Lazy loading initialized (rootMargin: ${rootMargin})`);
+    debug.info('LazySectionRenderer', `Lazy loading initialized (rootMargin: ${rootMargin})`);
   }
 
   /**
@@ -97,7 +97,7 @@ export class LazySectionRenderer {
       return;
     }
 
-    debug.log('LazySectionRenderer', `Rendering section: ${section.heading || sectionId}`);
+    debug.debug('LazySectionRenderer', `Rendering section: ${section.heading || sectionId}`);
 
     try {
       // Convert markdown to HTML
@@ -122,7 +122,7 @@ export class LazySectionRenderer {
         this.onRender(section, html);
       }
 
-      debug.log('LazySectionRenderer', `Section rendered: ${section.heading || sectionId}`);
+      debug.debug('LazySectionRenderer', `Section rendered: ${section.heading || sectionId}`);
     } catch (error) {
       debug.error('LazySectionRenderer', `Failed to render section ${sectionId}:`, error);
       
@@ -147,7 +147,7 @@ export class LazySectionRenderer {
    * Force render all pending sections
    */
   async renderAll(): Promise<void> {
-    debug.log('LazySectionRenderer', `Force rendering ${this.pendingSections.size} pending sections`);
+    debug.info('LazySectionRenderer', `Force rendering ${this.pendingSections.size} pending sections`);
 
     const promises: Promise<void>[] = [];
     
@@ -182,7 +182,7 @@ export class LazySectionRenderer {
     }
     this.pendingSections.clear();
     this.renderedSections.clear();
-    debug.log('LazySectionRenderer', 'Cleaned up');
+    debug.debug('LazySectionRenderer', 'Cleaned up');
   }
 }
 

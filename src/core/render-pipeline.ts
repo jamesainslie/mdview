@@ -55,11 +55,11 @@ export class RenderPipeline {
     try {
       await workerPool.initialize();
       this.workersEnabled = true;
-      debug.log('RenderPipeline', '✅ Worker pool initialized');
+      debug.info('RenderPipeline', '✅ Worker pool initialized');
     } catch (error) {
       // Workers unavailable (file:// URLs) - use optimized sync rendering
       if (window.location.protocol === 'file:') {
-        debug.log('RenderPipeline', 'Using optimized synchronous rendering (workers unavailable on file:// URLs)');
+        debug.warn('RenderPipeline', 'Using optimized synchronous rendering (workers unavailable on file:// URLs)');
       } else {
         debug.error('RenderPipeline', 'Worker initialization failed, using sync fallback:', error);
       }
@@ -106,7 +106,7 @@ export class RenderPipeline {
 
       // Use progressive hydration for large files (> 30KB)
       if (useLazySections || markdown.length > 30000) {
-        debug.log('RenderPipeline', 'Using progressive hydration for large document');
+        debug.info('RenderPipeline', 'Using progressive hydration for large document');
         await this.renderWithProgressiveHydration(options);
         return;
       }
@@ -145,7 +145,7 @@ export class RenderPipeline {
             errors: [],
           };
           
-          debug.log('RenderPipeline', 'Parsed markdown in worker');
+          debug.debug('RenderPipeline', 'Parsed markdown in worker');
         } catch (error) {
           debug.error('RenderPipeline', 'Worker parsing failed, falling back to sync:', error);
           result = await this.converter.convert(markdown);
@@ -192,9 +192,9 @@ export class RenderPipeline {
         message: 'Adding interactive features...',
       });
 
-      debug.log('RenderPipeline', 'Enhancing content...');
+      debug.debug('RenderPipeline', 'Enhancing content...');
       await this.enhanceContentWithWorkers(container, result, shouldUseWorkers);
-      debug.log('RenderPipeline', 'Content enhanced');
+      debug.debug('RenderPipeline', 'Content enhanced');
 
       if (this.cancelRequested) return;
 
@@ -205,9 +205,9 @@ export class RenderPipeline {
         message: 'Applying theme...',
       });
 
-      debug.log('RenderPipeline', 'Applying theme...');
+      debug.info('RenderPipeline', 'Applying theme...');
       await this.applyTheming(container);
-      debug.log('RenderPipeline', 'Theme applied successfully');
+      debug.info('RenderPipeline', 'Theme applied successfully');
 
       // Cache the result if enabled (to service worker)
       if (useCache && filePath) {
@@ -226,7 +226,7 @@ export class RenderPipeline {
           };
 
           await this.setCachedResult(cacheKey, cachedResult, filePath, contentHash, theme as ThemeName);
-          debug.log('RenderPipeline', 'Result cached in service worker');
+          debug.debug('RenderPipeline', 'Result cached in service worker');
         } catch (error) {
           debug.error('RenderPipeline', 'Failed to cache result:', error);
         }
@@ -297,18 +297,18 @@ export class RenderPipeline {
   ): Promise<void> {
     // CRITICAL: Apply syntax highlighting to visible blocks first (lazy loaded)
     if (useWorkers) {
-      debug.log('RenderPipeline', 'Applying syntax highlighting with workers...');
+      debug.debug('RenderPipeline', 'Applying syntax highlighting with workers...');
       await this.applySyntaxHighlightingWithWorkers(container);
     } else {
-      debug.log('RenderPipeline', 'Applying syntax highlighting...');
+      debug.debug('RenderPipeline', 'Applying syntax highlighting...');
       await this.applySyntaxHighlighting(container);
     }
 
     // CRITICAL: Mark Mermaid blocks (actual rendering happens lazily on intersection)
-    debug.log('RenderPipeline', 'Marking Mermaid blocks...');
+    debug.debug('RenderPipeline', 'Marking Mermaid blocks...');
     this.markMermaidBlocks(container);
 
-    debug.log('RenderPipeline', 'Syntax highlighting complete');
+    debug.debug('RenderPipeline', 'Syntax highlighting complete');
 
     // NON-CRITICAL: Schedule remaining enhancements during idle time
     // This improves perceived performance by not blocking the main render
@@ -320,14 +320,14 @@ export class RenderPipeline {
    */
   private scheduleIdleEnhancements(container: HTMLElement): void {
     const runEnhancements = () => {
-      debug.log('RenderPipeline', 'Running idle-time enhancements...');
+      debug.debug('RenderPipeline', 'Running idle-time enhancements...');
       
       // Batch DOM operations for efficiency
       this.addCopyButtons(container);
       this.setupImageLazyLoading(container);
       this.setupHeadingAnchors(container);
       
-      debug.log('RenderPipeline', 'Idle-time enhancements complete');
+      debug.debug('RenderPipeline', 'Idle-time enhancements complete');
     };
 
     // Use requestIdleCallback if available, otherwise setTimeout
@@ -478,11 +478,11 @@ export class RenderPipeline {
    */
   private async renderWithProgressiveHydration(options: RenderOptions): Promise<void> {
     const { container, markdown, preferences = {} } = options;
-    debug.log('RenderPipeline', 'Starting progressive hydration with preferences:', JSON.stringify(preferences));
+    debug.debug('RenderPipeline', 'Starting progressive hydration with preferences:', JSON.stringify(preferences));
 
     // Split markdown into sections
     const sections = splitIntoSections(markdown);
-    debug.log('RenderPipeline', `Progressive hydration: ${sections.length} sections`);
+    debug.info('RenderPipeline', `Progressive hydration: ${sections.length} sections`);
 
     // ===================================================================
     // PHASE 1: Instant Skeleton (< 50ms)
@@ -498,7 +498,7 @@ export class RenderPipeline {
     const skeletonHtml = SkeletonRenderer.generateSkeleton(sections);
     container.innerHTML = skeletonHtml;
 
-    debug.log('RenderPipeline', 'Skeleton rendered (structure visible)');
+    debug.debug('RenderPipeline', 'Skeleton rendered (structure visible)');
 
     // At this point, the user sees the full document structure!
     // Headings are visible, scroll works naturally
@@ -518,7 +518,7 @@ export class RenderPipeline {
     // PHASE 2: Progressive Hydration
     // Fill in actual content for each section
     // ===================================================================
-    debug.log('RenderPipeline', 'Starting progressive hydration...');
+    debug.debug('RenderPipeline', 'Starting progressive hydration...');
 
     for (let i = 0; i < sections.length; i++) {
       const section = sections[i];
@@ -539,7 +539,7 @@ export class RenderPipeline {
         // Convert markdown to HTML
         const result = await this.converter.convert(section.markdown);
         const sanitized = await this.sanitizeContent(result);
-        debug.log('RenderPipeline', `Hydrating section ${i}: Transforming content with preferences`, JSON.stringify(preferences));
+        debug.debug('RenderPipeline', `Hydrating section ${i}: Transforming content with preferences`, JSON.stringify(preferences));
         const transformed = await this.transformContent(sanitized, result, preferences);
 
         // Replace skeleton content with actual content
@@ -555,7 +555,7 @@ export class RenderPipeline {
       }
     }
 
-    debug.log('RenderPipeline', 'Progressive hydration complete');
+    debug.info('RenderPipeline', 'Progressive hydration complete');
 
     // ===================================================================
     // PHASE 3: Enhancement
@@ -575,7 +575,7 @@ export class RenderPipeline {
       message: 'Rendering complete',
     });
 
-    debug.log('RenderPipeline', 'Progressive hydration fully complete');
+    debug.info('RenderPipeline', 'Progressive hydration fully complete');
   }
 
   /**
@@ -607,7 +607,7 @@ export class RenderPipeline {
    * Stage 3: Transform content (process special blocks)
    */
   private async transformContent(html: string, result: ConversionResult, preferences: Record<string, unknown> = {}): Promise<string> {
-    debug.log('RenderPipeline', 'Transforming content with preferences:', JSON.stringify(preferences));
+    debug.debug('RenderPipeline', 'Transforming content with preferences:', JSON.stringify(preferences));
     let transformed = html;
 
     // Add language badges and line numbers to code blocks
@@ -648,7 +648,7 @@ export class RenderPipeline {
    */
   private addCodeBlockFeatures(html: string, _result: ConversionResult, preferences: Record<string, unknown> = {}): string {
     const showLineNumbers = !!preferences.lineNumbers;
-    debug.log('RenderPipeline', `addCodeBlockFeatures: showLineNumbers = ${showLineNumbers}`);
+    debug.debug('RenderPipeline', `addCodeBlockFeatures: showLineNumbers = ${showLineNumbers}`);
 
     return html.replace(
       /<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
@@ -659,7 +659,7 @@ export class RenderPipeline {
         let contentEnd = '';
 
         if (showLineNumbers) {
-          debug.log('RenderPipeline', 'Generating line numbers for code block');
+          debug.debug('RenderPipeline', 'Generating line numbers for code block');
           wrapperClass += ' has-line-numbers';
           // Count lines
           const lineCount = code.split('\n').length;
