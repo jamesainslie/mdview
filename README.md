@@ -254,7 +254,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Support
 - **Issues**: [GitHub Issues](https://github.com/jamesainslie/mdview/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/jamesainslie/mdview/discussions)
-- **Email**: [support@mdview.dev](mailto:support@mdview.dev)
 
 ## Changelog
 See [CHANGELOG.md](CHANGELOG.md) for version history.
