@@ -4,13 +4,14 @@
  */
 
 import type { AppState, ThemeName, LogLevel } from '../types';
+import { debug } from '../utils/debug-logger';
 
 class OptionsManager {
   private state: AppState | null = null;
   private hasChanges = false;
 
   async initialize(): Promise<void> {
-    console.log('[Options] Initializing...');
+    debug.log('Options', 'Initializing...');
 
     // Load state
     await this.loadState();
@@ -30,14 +31,14 @@ class OptionsManager {
     // Setup storage listener
     this.setupStorageListener();
 
-    console.log('[Options] Initialized');
+    debug.log('Options', 'Initialized');
   }
 
   private setupStorageListener(): void {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName === 'sync' && changes.preferences) {
-        const newPreferences = changes.preferences.newValue;
-        console.log('[Options] Storage changed, updating UI:', newPreferences);
+        const newPreferences = changes.preferences.newValue as Partial<AppState['preferences']>;
+        debug.log('Options', 'Storage changed, updating UI:', newPreferences);
         
         if (this.state) {
           this.state.preferences = { ...this.state.preferences, ...newPreferences };
@@ -54,11 +55,13 @@ class OptionsManager {
 
   private async loadState(): Promise<void> {
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
+        state: AppState;
+      };
       this.state = response.state;
-      console.log('[Options] State loaded:', this.state);
+      debug.log('Options', 'State loaded:', this.state);
     } catch (error) {
-      console.error('[Options] Failed to load state:', error);
+      debug.error('Options', 'Failed to load state:', error);
     }
   }
 
@@ -128,7 +131,7 @@ class OptionsManager {
     const btnSave = document.getElementById('btn-save');
     if (btnSave) {
       btnSave.addEventListener('click', () => {
-        this.saveSettings();
+        void this.saveSettings();
       });
     }
 
@@ -136,7 +139,7 @@ class OptionsManager {
     const btnClearCache = document.getElementById('btn-clear-cache');
     if (btnClearCache) {
       btnClearCache.addEventListener('click', () => {
-        this.clearCache();
+        void this.clearCache();
       });
     }
 
@@ -144,7 +147,7 @@ class OptionsManager {
     const btnResetDefaults = document.getElementById('btn-reset-defaults');
     if (btnResetDefaults) {
       btnResetDefaults.addEventListener('click', () => {
-        this.resetDefaults();
+        void this.resetDefaults();
       });
     }
 
@@ -152,7 +155,7 @@ class OptionsManager {
     const btnExport = document.getElementById('btn-export-settings');
     if (btnExport) {
       btnExport.addEventListener('click', () => {
-        this.exportSettings();
+        void this.exportSettings();
       });
     }
 
@@ -166,7 +169,7 @@ class OptionsManager {
 
       fileInput.addEventListener('change', () => {
         if (fileInput.files && fileInput.files[0]) {
-          this.importSettings(fileInput.files[0]);
+          void this.importSettings(fileInput.files[0]);
         }
       });
     }
@@ -233,9 +236,9 @@ class OptionsManager {
       this.updateSaveButton();
       this.showSaveStatus('Settings saved successfully', false);
 
-      console.log('[Options] Settings saved:', preferences);
+      debug.log('Options', 'Settings saved:', preferences);
     } catch (error) {
-      console.error('[Options] Failed to save settings:', error);
+      debug.error('Options', 'Failed to save settings:', error);
       this.showSaveStatus('Failed to save settings', true);
     }
   }
@@ -296,12 +299,12 @@ class OptionsManager {
       // For now let's use local storage clear as that's what we have
       
       this.showSaveStatus('Cache cleared successfully', false);
-      console.log('[Options] Cache cleared');
+      debug.log('Options', 'Cache cleared');
       
       // Update stats
       await this.updateCacheStats();
     } catch (error) {
-      console.error('[Options] Failed to clear cache:', error);
+      debug.error('Options', 'Failed to clear cache:', error);
       this.showSaveStatus('Failed to clear cache', true);
     }
   }
@@ -309,7 +312,9 @@ class OptionsManager {
   private async updateCacheStats(): Promise<void> {
     try {
       // Get stats from background service worker
-      const response = await chrome.runtime.sendMessage({ type: 'CACHE_STATS' });
+      const response = (await chrome.runtime.sendMessage({ type: 'CACHE_STATS' })) as {
+        stats?: { size: number; maxSize: number };
+      };
       
       if (response && response.stats) {
         const { size, maxSize } = response.stats;
@@ -334,7 +339,7 @@ class OptionsManager {
         }
       }
     } catch (error) {
-      console.error('[Options] Failed to update cache stats:', error);
+      debug.error('Options', 'Failed to update cache stats:', error);
     }
   }
 
@@ -376,9 +381,9 @@ class OptionsManager {
       this.updateSaveButton();
       this.showSaveStatus('Settings reset to defaults', false);
 
-      console.log('[Options] Settings reset to defaults');
+      debug.log('Options', 'Settings reset to defaults');
     } catch (error) {
-      console.error('[Options] Failed to reset settings:', error);
+      debug.error('Options', 'Failed to reset settings:', error);
       this.showSaveStatus('Failed to reset settings', true);
     }
   }
@@ -407,9 +412,9 @@ class OptionsManager {
       URL.revokeObjectURL(url);
 
       this.showSaveStatus('Settings exported successfully', false);
-      console.log('[Options] Settings exported');
+      debug.log('Options', 'Settings exported');
     } catch (error) {
-      console.error('[Options] Failed to export settings:', error);
+      debug.error('Options', 'Failed to export settings:', error);
       this.showSaveStatus('Failed to export settings', true);
     }
   }
@@ -417,9 +422,11 @@ class OptionsManager {
   private async importSettings(file: File): Promise<void> {
     try {
       const text = await file.text();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const settings = JSON.parse(text);
 
       // Validate settings
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (!settings.preferences) {
         throw new Error('Invalid settings file');
       }
@@ -427,11 +434,13 @@ class OptionsManager {
       // Apply settings
       await chrome.runtime.sendMessage({
         type: 'UPDATE_PREFERENCES',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
         payload: { preferences: settings.preferences },
       });
 
       // Update UI
       if (this.state) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
         this.state.preferences = settings.preferences;
         this.updateUI();
       }
@@ -440,9 +449,9 @@ class OptionsManager {
       this.updateSaveButton();
       this.showSaveStatus('Settings imported successfully', false);
 
-      console.log('[Options] Settings imported');
+      debug.log('Options', 'Settings imported');
     } catch (error) {
-      console.error('[Options] Failed to import settings:', error);
+      debug.error('Options', 'Failed to import settings:', error);
       this.showSaveStatus('Failed to import settings', true);
     }
   }
@@ -452,10 +461,10 @@ class OptionsManager {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     const options = new OptionsManager();
-    options.initialize().catch(console.error);
+    options.initialize().catch((err) => debug.error('Options', err));
   });
 } else {
   const options = new OptionsManager();
-  options.initialize().catch(console.error);
+  options.initialize().catch((err) => debug.error('Options', err));
 }
 

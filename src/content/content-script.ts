@@ -16,7 +16,7 @@ try {
   
   // Patch the URL constructor for Vite's module resolution
   const OriginalURL = window.URL;
-  // @ts-ignore
+  // @ts-expect-error - TS doesn't like extending URL with different signature
   window.URL = class extends OriginalURL {
     constructor(url: string | URL, base?: string | URL) {
       // Convert file:// base URLs to chrome-extension:// URLs
@@ -242,7 +242,9 @@ class MDViewContentScript {
 
   private async loadState(): Promise<void> {
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
+        state: AppState;
+      };
       this.state = response.state;
       debug.debug('MDView', 'State loaded:', this.state);
       // Update debug mode based on loaded state
@@ -389,19 +391,21 @@ class MDViewContentScript {
   }
 
   private setupMessageListener(): void {
-    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, _sender, sendResponse) => {
       debug.info('MDView', 'Content script received message:', message.type);
 
       switch (message.type) {
         case 'APPLY_THEME':
-          this.handleApplyTheme(message.payload.theme)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          this.handleApplyTheme(message.payload.theme as string)
             .then(() => sendResponse({ success: true }))
             .catch(error => sendResponse({ success: false, error: String(error) }));
           return true; // Keep channel open for async response
           break;
 
         case 'PREFERENCES_UPDATED':
-          this.handlePreferencesUpdate(message.payload.preferences)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          this.handlePreferencesUpdate(message.payload.preferences as Partial<AppState['preferences']>)
             .then(() => sendResponse({ success: true }))
             .catch(error => sendResponse({ success: false, error: String(error) }));
           return true; // Keep channel open for async response
@@ -438,7 +442,7 @@ class MDViewContentScript {
   /**
    * Handle preferences update message
    */
-  private async handlePreferencesUpdate(preferences: any): Promise<void> {
+  private async handlePreferencesUpdate(preferences: Partial<AppState['preferences']>): Promise<void> {
     try {
       debug.info('MDView', 'Handling preferences update:', preferences);
       

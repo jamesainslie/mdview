@@ -4,6 +4,7 @@
  */
 
 import type { Theme, ThemeName } from '../types';
+import { debug } from '../utils/debug-logger';
 
 export interface ThemeInfo {
   name: ThemeName;
@@ -21,13 +22,14 @@ export class ThemeEngine {
    */
   async loadTheme(themeName: ThemeName): Promise<Theme> {
     // Check cache
-    if (this.cache.has(themeName)) {
-      return this.cache.get(themeName)!;
+    const cached = this.cache.get(themeName);
+    if (cached) {
+      return cached;
     }
 
     try {
       // Dynamically import theme definition
-      const themeModule = await import(`../themes/${themeName}.ts`);
+      const themeModule = (await import(`../themes/${themeName}.ts`)) as { default: Theme };
       const theme = themeModule.default;
 
       // Cache theme
@@ -35,7 +37,7 @@ export class ThemeEngine {
 
       return theme;
     } catch (error) {
-      console.error(`[ThemeEngine] Failed to load theme ${themeName}:`, error);
+      debug.error('ThemeEngine', `Failed to load theme ${themeName}:`, error);
       // Fallback to github-light
       if (themeName !== 'github-light') {
         return this.loadTheme('github-light');
@@ -48,11 +50,11 @@ export class ThemeEngine {
    * Apply theme to document
    */
   async applyTheme(theme: Theme | ThemeName): Promise<void> {
-    console.log(`[ThemeEngine] applyTheme called with:`, typeof theme === 'string' ? theme : theme.name);
+    debug.log('ThemeEngine', `applyTheme called with:`, typeof theme === 'string' ? theme : theme.name);
     
     // Load theme if name provided
     const themeObj = typeof theme === 'string' ? await this.loadTheme(theme) : theme;
-    console.log(`[ThemeEngine] Theme loaded/resolved:`, themeObj.name);
+    debug.log('ThemeEngine', `Theme loaded/resolved:`, themeObj.name);
 
     // Get user preferences for overrides (from storage, if available)
     // Since ThemeEngine runs in content script, we need to fetch preferences.
@@ -60,9 +62,11 @@ export class ThemeEngine {
     // For this implementation, we'll try to fetch from storage if possible, but ideally applyTheme receives overrides.
     
     // Fetch overrides from storage
-    let overrides: Partial<Theme['typography']> & { maxWidth?: number, useMaxWidth?: boolean } = {};
+    const overrides: Partial<Theme['typography']> & { maxWidth?: number; useMaxWidth?: boolean } = {};
     try {
-        const storage = await chrome.storage.sync.get('preferences');
+        const storage = (await chrome.storage.sync.get('preferences')) as {
+          preferences?: Partial<import('../types').AppState['preferences']>;
+        };
         if (storage.preferences) {
             const p = storage.preferences;
             if (p.fontFamily) overrides.fontFamily = p.fontFamily;
@@ -72,7 +76,7 @@ export class ThemeEngine {
             overrides.useMaxWidth = p.useMaxWidth;
         }
     } catch (e) {
-        console.warn('[ThemeEngine] Failed to load preference overrides', e);
+        debug.warn('ThemeEngine', 'Failed to load preference overrides', e);
     }
 
     // Compile to CSS variables with overrides
@@ -83,7 +87,7 @@ export class ThemeEngine {
     root.classList.add('theme-transitioning');
     
     // Update CSS variables on both :root and documentElement for immediate effect
-    console.log(`[ThemeEngine] Applying ${Object.keys(cssVars).length} CSS variables to :root and html`);
+    debug.log('ThemeEngine', `Applying ${Object.keys(cssVars).length} CSS variables to :root and html`);
     Object.entries(cssVars).forEach(([key, value]) => {
       root.style.setProperty(key, value);
       // Force immediate style recalculation for critical color variables
@@ -116,15 +120,16 @@ export class ThemeEngine {
     document.body.style.color = themeObj.colors.foreground;
     
     // Update syntax theme
-    console.log(`[ThemeEngine] Updating syntax theme to: ${themeObj.syntaxTheme}`);
+    debug.log('ThemeEngine', `Updating syntax theme to: ${themeObj.syntaxTheme}`);
     await this.updateSyntaxTheme(themeObj.syntaxTheme);
 
     // Update mermaid theme
     try {
       const { mermaidRenderer } = await import('../renderers/mermaid-renderer');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       mermaidRenderer.updateTheme(themeObj.mermaidTheme);
     } catch (error) {
-      console.error('[ThemeEngine] Failed to update mermaid theme:', error);
+      debug.error('ThemeEngine', 'Failed to update mermaid theme:', error);
     }
     
     // Remove transition class after a brief moment (non-blocking)
@@ -137,7 +142,7 @@ export class ThemeEngine {
     // Save current theme
     this.currentTheme = themeObj;
     
-    console.log(`[ThemeEngine] Successfully applied theme: ${themeObj.name}`);
+    debug.log('ThemeEngine', `Successfully applied theme: ${themeObj.name}`);
   }
 
   /**
@@ -253,9 +258,10 @@ export class ThemeEngine {
   private async updateSyntaxTheme(syntaxTheme: string): Promise<void> {
     try {
       const { syntaxHighlighter } = await import('../renderers/syntax-highlighter');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       await syntaxHighlighter.setTheme(syntaxTheme);
     } catch (error) {
-      console.error('[ThemeEngine] Failed to update syntax theme:', error);
+      debug.error('ThemeEngine', 'Failed to update syntax theme:', error);
     }
   }
 }

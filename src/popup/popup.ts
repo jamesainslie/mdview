@@ -4,12 +4,13 @@
  */
 
 import type { AppState, ThemeName } from '../types';
+import { debug } from '../utils/debug-logger';
 
 class PopupManager {
   private state: AppState | null = null;
 
   async initialize(): Promise<void> {
-    console.log('[Popup] Initializing...');
+    debug.log('Popup', 'Initializing...');
 
     // Load state
     await this.loadState();
@@ -23,14 +24,14 @@ class PopupManager {
     // Setup storage listener
     this.setupStorageListener();
 
-    console.log('[Popup] Initialized');
+    debug.log('Popup', 'Initialized');
   }
 
   private setupStorageListener(): void {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName === 'sync' && changes.preferences) {
-        const newPreferences = changes.preferences.newValue;
-        console.log('[Popup] Storage changed, updating UI:', newPreferences);
+        const newPreferences = changes.preferences.newValue as Partial<AppState['preferences']>;
+        debug.log('Popup', 'Storage changed, updating UI:', newPreferences);
         
         if (this.state) {
           this.state.preferences = { ...this.state.preferences, ...newPreferences };
@@ -42,11 +43,13 @@ class PopupManager {
 
   private async loadState(): Promise<void> {
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
+        state: AppState;
+      };
       this.state = response.state;
-      console.log('[Popup] State loaded:', this.state);
+      debug.log('Popup', 'State loaded:', this.state);
     } catch (error) {
-      console.error('[Popup] Failed to load state:', error);
+      debug.error('Popup', 'Failed to load state:', error);
     }
   }
 
@@ -94,7 +97,7 @@ class PopupManager {
     if (themeSelect) {
       themeSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
-        this.handleThemeChange(target.value as ThemeName);
+        void this.handleThemeChange(target.value as ThemeName);
       });
     }
 
@@ -103,7 +106,7 @@ class PopupManager {
     if (autoTheme) {
       autoTheme.addEventListener('change', (e) => {
         const target = e.target as HTMLInputElement;
-        this.handlePreferenceChange({ autoTheme: target.checked });
+        void this.handlePreferenceChange({ autoTheme: target.checked });
       });
     }
 
@@ -112,33 +115,37 @@ class PopupManager {
     if (autoReload) {
       autoReload.addEventListener('change', (e) => {
         const target = e.target as HTMLInputElement;
-        this.handlePreferenceChange({ autoReload: target.checked });
+        void this.handlePreferenceChange({ autoReload: target.checked });
       });
     }
 
     // Line numbers toggle
     const lineNumbers = document.getElementById('line-numbers');
     if (lineNumbers) {
-      lineNumbers.addEventListener('change', async (e) => {
+      lineNumbers.addEventListener('change', (e) => {
         const target = e.target as HTMLInputElement;
-        console.log('[Popup] Line numbers toggle changed:', target.checked);
-        await this.handlePreferenceChange({ lineNumbers: target.checked });
-        
-        // Trigger reload to re-render with line numbers
-        chrome.tabs.reload();
+        debug.log('Popup', 'Line numbers toggle changed:', target.checked);
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        void (async () => {
+          await this.handlePreferenceChange({ lineNumbers: target.checked });
+          // Trigger reload to re-render with line numbers
+          await chrome.tabs.reload();
+        })();
       });
     }
 
     // Use max width toggle
     const useMaxWidth = document.getElementById('use-max-width');
     if (useMaxWidth) {
-      useMaxWidth.addEventListener('change', async (e) => {
+      useMaxWidth.addEventListener('change', (e) => {
         const target = e.target as HTMLInputElement;
-        console.log('[Popup] Use max width toggle changed:', target.checked);
-        await this.handlePreferenceChange({ useMaxWidth: target.checked });
-        
-        // Trigger reload to re-render with new max width
-        chrome.tabs.reload();
+        debug.log('Popup', 'Use max width toggle changed:', target.checked);
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        void (async () => {
+          await this.handlePreferenceChange({ useMaxWidth: target.checked });
+          // Trigger reload to re-render with new max width
+          await chrome.tabs.reload();
+        })();
       });
     }
 
@@ -147,7 +154,7 @@ class PopupManager {
     if (syncTabs) {
       syncTabs.addEventListener('change', (e) => {
         const target = e.target as HTMLInputElement;
-        this.handlePreferenceChange({ syncTabs: target.checked });
+        void this.handlePreferenceChange({ syncTabs: target.checked });
       });
     }
 
@@ -155,7 +162,7 @@ class PopupManager {
     const btnSettings = document.getElementById('btn-settings');
     if (btnSettings) {
       btnSettings.addEventListener('click', () => {
-        chrome.runtime.openOptionsPage();
+        void chrome.runtime.openOptionsPage();
       });
     }
 
@@ -163,7 +170,7 @@ class PopupManager {
     const btnHelp = document.getElementById('btn-help');
     if (btnHelp) {
       btnHelp.addEventListener('click', () => {
-        chrome.tabs.create({
+        void chrome.tabs.create({
           url: 'https://github.com/jamesainslie/mdview#readme',
         });
       });
@@ -171,9 +178,9 @@ class PopupManager {
   }
 
   private async handleThemeChange(theme: ThemeName): Promise<void> {
-    console.log('[Popup] handleThemeChange called with:', theme);
+    debug.log('Popup', 'handleThemeChange called with:', theme);
     try {
-      console.log('[Popup] Sending APPLY_THEME message to background');
+      debug.log('Popup', 'Sending APPLY_THEME message to background');
       await chrome.runtime.sendMessage({
         type: 'APPLY_THEME',
         payload: { theme },
@@ -184,9 +191,9 @@ class PopupManager {
         this.state.preferences.theme = theme;
       }
 
-      console.log('[Popup] Theme change message sent successfully:', theme);
+      debug.log('Popup', 'Theme change message sent successfully:', theme);
     } catch (error) {
-      console.error('[Popup] Failed to change theme:', error);
+      debug.error('Popup', 'Failed to change theme:', error);
     }
   }
 
@@ -204,9 +211,9 @@ class PopupManager {
         this.state.preferences = { ...this.state.preferences, ...preferences };
       }
 
-      console.log('[Popup] Preferences updated:', preferences);
+      debug.log('Popup', 'Preferences updated:', preferences);
     } catch (error) {
-      console.error('[Popup] Failed to update preferences:', error);
+      debug.error('Popup', 'Failed to update preferences:', error);
     }
   }
 }
@@ -215,11 +222,11 @@ class PopupManager {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     const popup = new PopupManager();
-    popup.initialize().catch(console.error);
+    popup.initialize().catch((err) => debug.error('Popup', err));
   });
 } else {
   const popup = new PopupManager();
-  popup.initialize().catch(console.error);
+  popup.initialize().catch((err) => debug.error('Popup', err));
 }
 
 
