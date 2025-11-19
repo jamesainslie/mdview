@@ -99,6 +99,7 @@ class PopupManager {
     if (lineNumbers) {
       lineNumbers.addEventListener('change', (e) => {
         const target = e.target as HTMLInputElement;
+        console.log('[Popup] Line numbers toggle changed:', target.checked);
         this.handlePreferenceChange({ lineNumbers: target.checked });
       });
     }
@@ -132,7 +133,9 @@ class PopupManager {
   }
 
   private async handleThemeChange(theme: ThemeName): Promise<void> {
+    console.log('[Popup] handleThemeChange called with:', theme);
     try {
+      console.log('[Popup] Sending APPLY_THEME message to background');
       await chrome.runtime.sendMessage({
         type: 'APPLY_THEME',
         payload: { theme },
@@ -143,7 +146,7 @@ class PopupManager {
         this.state.preferences.theme = theme;
       }
 
-      console.log('[Popup] Theme changed:', theme);
+      console.log('[Popup] Theme change message sent successfully:', theme);
     } catch (error) {
       console.error('[Popup] Failed to change theme:', error);
     }
@@ -180,4 +183,5 @@ if (document.readyState === 'loading') {
   const popup = new PopupManager();
   popup.initialize().catch(console.error);
 }
+
 

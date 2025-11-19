@@ -3,7 +3,7 @@
  * Manages settings page UI and interactions
  */
 
-import type { AppState, ThemeName } from '../types';
+import type { AppState, ThemeName, LogLevel } from '../types';
 
 class OptionsManager {
   private state: AppState | null = null;
@@ -71,7 +71,7 @@ class OptionsManager {
 
     // Advanced
     this.setValue('sync-tabs', preferences.syncTabs);
-    this.setValue('debug-mode', preferences.debug);
+    this.setValue('log-level', preferences.logLevel || 'error');
   }
 
   private setValue(id: string, value: string | boolean | number): void {
@@ -187,7 +187,7 @@ class OptionsManager {
         lineNumbers: this.getCheckboxValue('code-line-numbers'),
         autoReload: this.getCheckboxValue('auto-reload'),
         syncTabs: this.getCheckboxValue('sync-tabs'),
-        debug: this.getCheckboxValue('debug-mode'),
+        logLevel: this.getSelectValue('log-level') as LogLevel,
       };
 
       // Send to background
@@ -276,7 +276,7 @@ class OptionsManager {
         autoReload: true,
         lineNumbers: false,
         syncTabs: false,
-        debug: false,
+        logLevel: 'error',
       };
 
       await chrome.runtime.sendMessage({
