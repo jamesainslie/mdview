@@ -16,7 +16,6 @@ try {
 
   // Patch the URL constructor for Vite's module resolution
   const OriginalURL = window.URL;
-  // @ts-expect-error - TS doesn't like extending URL with different signature
   window.URL = class extends OriginalURL {
     constructor(url: string | URL, base?: string | URL) {
       // Convert file:// base URLs to chrome-extension:// URLs

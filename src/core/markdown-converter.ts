@@ -72,7 +72,9 @@ export class MarkdownConverter {
     });
 
     // markdown-it-emoji: Emoji support
-    const emojiPluginToUse = (emojiPlugin as { full?: typeof emojiPlugin }).full || emojiPlugin;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-type-assertion
+    const emojiPluginToUse = ((emojiPlugin as any).full || emojiPlugin) as any;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     this.md.use(emojiPluginToUse);
 
     // markdown-it-footnote: Footnotes support

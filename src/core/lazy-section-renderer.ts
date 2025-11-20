@@ -149,22 +149,18 @@ export class LazySectionRenderer {
   /**
    * Force render all pending sections
    */
-  async renderAll(): Promise<void> {
+  renderAll(): void {
     debug.info(
       'LazySectionRenderer',
       `Force rendering ${this.pendingSections.size} pending sections`
     );
 
-    const promises: Promise<void>[] = [];
-
     for (const [sectionId] of this.pendingSections) {
       const placeholder = document.querySelector(`[data-section-id="${sectionId}"]`) as HTMLElement;
       if (placeholder) {
-        promises.push(this.renderSection(sectionId, placeholder));
+        this.renderSection(sectionId, placeholder);
       }
     }
-
-    await Promise.all(promises);
   }
 
   /**

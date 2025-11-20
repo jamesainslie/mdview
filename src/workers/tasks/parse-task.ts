@@ -67,7 +67,9 @@ export function handleParseTask(payload: unknown): ParseTaskResult {
     labelAfter: true,
   });
 
-  const emojiPluginToUse = (emojiPlugin as { full?: typeof emojiPlugin }).full || emojiPlugin;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-type-assertion
+  const emojiPluginToUse = ((emojiPlugin as any).full || emojiPlugin) as any;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   md.use(emojiPluginToUse);
 
   // Add custom fence renderer for code blocks and mermaid
