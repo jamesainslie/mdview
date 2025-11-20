@@ -36,6 +36,7 @@
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
     "eslint": "^8.55.0",
+    "jsdom": "^27.2.0",
     "playwright": "^1.48.0",
     "prettier": "^3.1.0",
     "semantic-release": "^24.2.9",
