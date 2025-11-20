@@ -30,7 +30,10 @@ export class LazySectionRenderer {
     const { rootMargin = '500px', threshold = 0.01 } = options;
 
     if (!('IntersectionObserver' in window)) {
-      debug.warn('LazySectionRenderer', 'IntersectionObserver not supported, will render all immediately');
+      debug.warn(
+        'LazySectionRenderer',
+        'IntersectionObserver not supported, will render all immediately'
+      );
       return;
     }
 
@@ -42,7 +45,7 @@ export class LazySectionRenderer {
             const sectionId = placeholder.dataset.sectionId;
 
             if (sectionId && this.pendingSections.has(sectionId)) {
-              this.renderSection(sectionId, placeholder);
+              void this.renderSection(sectionId, placeholder);
               this.observer?.unobserve(placeholder);
             }
           }
@@ -65,7 +68,7 @@ export class LazySectionRenderer {
     placeholder.className = 'mdview-section-placeholder';
     placeholder.dataset.sectionId = section.id;
     placeholder.dataset.heading = section.heading || '';
-    
+
     // Add visual placeholder content
     placeholder.innerHTML = `
       <div class="placeholder-content">
@@ -82,7 +85,7 @@ export class LazySectionRenderer {
       this.observer.observe(placeholder);
     } else {
       // No observer support, render immediately
-      this.renderSection(section.id, placeholder);
+      void this.renderSection(section.id, placeholder);
     }
 
     return placeholder;
@@ -91,7 +94,7 @@ export class LazySectionRenderer {
   /**
    * Render a section when it becomes visible
    */
-  private async renderSection(sectionId: string, placeholder: HTMLElement): Promise<void> {
+  private renderSection(sectionId: string, placeholder: HTMLElement): void {
     const section = this.pendingSections.get(sectionId);
     if (!section || this.renderedSections.has(sectionId)) {
       return;
@@ -101,7 +104,7 @@ export class LazySectionRenderer {
 
     try {
       // Convert markdown to HTML
-      const result = await this.converter.convert(section.markdown);
+      const result = this.converter.convert(section.markdown);
       const html = result.html;
 
       // Create section container
@@ -125,12 +128,12 @@ export class LazySectionRenderer {
       debug.debug('LazySectionRenderer', `Section rendered: ${section.heading || sectionId}`);
     } catch (error) {
       debug.error('LazySectionRenderer', `Failed to render section ${sectionId}:`, error);
-      
+
       // Show error in placeholder
       placeholder.innerHTML = `
         <div class="mdview-section-error">
           <p>Failed to render section</p>
-          <pre>${error}</pre>
+          <pre>${String(error)}</pre>
         </div>
       `;
     }
@@ -147,10 +150,13 @@ export class LazySectionRenderer {
    * Force render all pending sections
    */
   async renderAll(): Promise<void> {
-    debug.info('LazySectionRenderer', `Force rendering ${this.pendingSections.size} pending sections`);
+    debug.info(
+      'LazySectionRenderer',
+      `Force rendering ${this.pendingSections.size} pending sections`
+    );
 
     const promises: Promise<void>[] = [];
-    
+
     for (const [sectionId] of this.pendingSections) {
       const placeholder = document.querySelector(`[data-section-id="${sectionId}"]`) as HTMLElement;
       if (placeholder) {
@@ -185,5 +191,3 @@ export class LazySectionRenderer {
     debug.debug('LazySectionRenderer', 'Cleaned up');
   }
 }
-
-

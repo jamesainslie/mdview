@@ -39,12 +39,12 @@ class OptionsManager {
       if (areaName === 'sync' && changes.preferences) {
         const newPreferences = changes.preferences.newValue as Partial<AppState['preferences']>;
         debug.log('Options', 'Storage changed, updating UI:', newPreferences);
-        
+
         if (this.state) {
           this.state.preferences = { ...this.state.preferences, ...newPreferences };
-          
+
           // Only update UI if we don't have unsaved changes to avoid overwriting user input
-          // OR: simplistic approach - just update. 
+          // OR: simplistic approach - just update.
           // Given the request "sync logic", immediate update is preferred.
           // If the user is actively editing, this might be disruptive, but likely rare collision.
           this.updateUI();
@@ -55,10 +55,8 @@ class OptionsManager {
 
   private async loadState(): Promise<void> {
     try {
-      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
-        state: AppState;
-      };
-      this.state = response.state;
+      const response: unknown = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      this.state = (response as { state: AppState }).state;
       debug.log('Options', 'State loaded:', this.state);
     } catch (error) {
       debug.error('Options', 'Failed to load state:', error);
@@ -76,7 +74,7 @@ class OptionsManager {
     this.setValue('light-theme', preferences.lightTheme);
     this.setValue('dark-theme', preferences.darkTheme);
     this.setValue('code-line-numbers', preferences.lineNumbers);
-    
+
     // Appearance Overrides
     this.setValue('font-family', preferences.fontFamily || '');
     this.setValue('code-font-family', preferences.codeFontFamily || '');
@@ -100,10 +98,7 @@ class OptionsManager {
   }
 
   private setValue(id: string, value: string | boolean | number): void {
-    const element = document.getElementById(id) as
-      | HTMLInputElement
-      | HTMLSelectElement
-      | null;
+    const element = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
     if (!element) return;
 
     if (element instanceof HTMLInputElement) {
@@ -209,7 +204,7 @@ class OptionsManager {
         lightTheme: this.getSelectValue('light-theme') as ThemeName,
         darkTheme: this.getSelectValue('dark-theme') as ThemeName,
         lineNumbers: this.getCheckboxValue('code-line-numbers'),
-        
+
         // Overrides
         fontFamily: this.getInputValue('font-family'),
         codeFontFamily: this.getInputValue('code-font-family'),
@@ -291,16 +286,19 @@ class OptionsManager {
 
     try {
       await chrome.storage.local.clear();
-      
+
       // Also invalidate memory cache in background
-      await chrome.runtime.sendMessage({ type: 'CACHE_INVALIDATE_BY_PATH', payload: { filePath: '' } }); // Hack to clear all via path if we don't have explicit clear all
-      
+      await chrome.runtime.sendMessage({
+        type: 'CACHE_INVALIDATE_BY_PATH',
+        payload: { filePath: '' },
+      }); // Hack to clear all via path if we don't have explicit clear all
+
       // Actually, we should probably add a proper clear command to background
       // For now let's use local storage clear as that's what we have
-      
+
       this.showSaveStatus('Cache cleared successfully', false);
       debug.log('Options', 'Cache cleared');
-      
+
       // Update stats
       await this.updateCacheStats();
     } catch (error) {
@@ -312,29 +310,29 @@ class OptionsManager {
   private async updateCacheStats(): Promise<void> {
     try {
       // Get stats from background service worker
-      const response = (await chrome.runtime.sendMessage({ type: 'CACHE_STATS' })) as {
-        stats?: { size: number; maxSize: number };
-      };
-      
-      if (response && response.stats) {
-        const { size, maxSize } = response.stats;
-        
+      const response: unknown = await chrome.runtime.sendMessage({ type: 'CACHE_STATS' });
+      const typedResponse = response as { stats?: { size: number; maxSize: number } };
+
+      if (typedResponse && typedResponse.stats) {
+        const { size, maxSize } = typedResponse.stats;
+
         const sizeEl = document.getElementById('cache-size');
         const maxEl = document.getElementById('cache-max');
         const memEl = document.getElementById('cache-memory');
-        
+
         if (sizeEl) sizeEl.textContent = String(size);
         if (maxEl) maxEl.textContent = String(maxSize);
-        
+
         // Estimate memory usage (very rough estimate: 100KB per entry on average?)
         // In reality we don't know exact memory usage easily in JS without more complex tracking
         // Let's just show item count for now or a rough estimate
         if (memEl) {
-          const estimatedSize = (size * 100 * 1024); // 100KB per entry
-          const formattedSize = estimatedSize > 1024 * 1024 
-            ? `${(estimatedSize / (1024 * 1024)).toFixed(1)} MB` 
-            : `${(estimatedSize / 1024).toFixed(0)} KB`;
-            
+          const estimatedSize = size * 100 * 1024; // 100KB per entry
+          const formattedSize =
+            estimatedSize > 1024 * 1024
+              ? `${(estimatedSize / (1024 * 1024)).toFixed(1)} MB`
+              : `${(estimatedSize / 1024).toFixed(0)} KB`;
+
           memEl.textContent = `~${formattedSize}`;
         }
       }
@@ -388,7 +386,7 @@ class OptionsManager {
     }
   }
 
-  private async exportSettings(): Promise<void> {
+  private exportSettings(): void {
     if (!this.state) return;
 
     try {
@@ -467,4 +465,3 @@ if (document.readyState === 'loading') {
   const options = new OptionsManager();
   options.initialize().catch((err) => debug.error('Options', err));
 }
-

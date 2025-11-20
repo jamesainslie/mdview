@@ -25,7 +25,14 @@ export interface RenderOptions {
 }
 
 export interface RenderProgress {
-  stage: 'parsing' | 'sanitizing' | 'transforming' | 'enhancing' | 'theming' | 'complete' | 'cached';
+  stage:
+    | 'parsing'
+    | 'sanitizing'
+    | 'transforming'
+    | 'enhancing'
+    | 'theming'
+    | 'complete'
+    | 'cached';
   progress: number; // 0-100
   message: string;
 }
@@ -43,7 +50,7 @@ export class RenderPipeline {
   constructor() {
     this.converter = new MarkdownConverter();
     // Initialize workers in background
-    this.initializeWorkers();
+    void this.initializeWorkers();
   }
 
   /**
@@ -59,7 +66,10 @@ export class RenderPipeline {
     } catch (error) {
       // Workers unavailable (file:// URLs) - use optimized sync rendering
       if (window.location.protocol === 'file:') {
-        debug.warn('RenderPipeline', 'Using optimized synchronous rendering (workers unavailable on file:// URLs)');
+        debug.warn(
+          'RenderPipeline',
+          'Using optimized synchronous rendering (workers unavailable on file:// URLs)'
+        );
       } else {
         debug.error('RenderPipeline', 'Worker initialization failed, using sync fallback:', error);
       }
@@ -72,10 +82,10 @@ export class RenderPipeline {
    */
   async render(options: RenderOptions): Promise<void> {
     this.cancelRequested = false;
-    const { 
-      container, 
-      markdown, 
-      theme = 'github-light', 
+    const {
+      container,
+      markdown,
+      theme = 'github-light',
       filePath = '',
       preferences = {},
       useCache = true,
@@ -88,7 +98,12 @@ export class RenderPipeline {
     try {
       // Check cache if enabled (from service worker)
       if (useCache && filePath) {
-        const cacheKey = await this.getCacheKey(filePath, markdown, theme as ThemeName, preferences);
+        const cacheKey = await this.getCacheKey(
+          filePath,
+          markdown,
+          theme as ThemeName,
+          preferences
+        );
 
         const cached = await this.getCachedResult(cacheKey);
         if (cached) {
@@ -98,7 +113,7 @@ export class RenderPipeline {
             progress: 100,
             message: 'Loading from cache...',
           });
-          
+
           await this.renderFromCache(container, cached);
           return;
         }
@@ -119,7 +134,7 @@ export class RenderPipeline {
       });
 
       let result: ConversionResult;
-      
+
       if (shouldUseWorkers) {
         try {
           const taskId = `parse-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -132,7 +147,10 @@ export class RenderPipeline {
             },
           };
 
-          const workerResult = await workerPool.execute<{ html: string; metadata: ConversionResult['metadata'] }>({
+          const workerResult = await workerPool.execute<{
+            html: string;
+            metadata: ConversionResult['metadata'];
+          }>({
             type: 'parse',
             id: taskId,
             payload,
@@ -144,14 +162,14 @@ export class RenderPipeline {
             metadata: workerResult.metadata,
             errors: [],
           };
-          
+
           debug.debug('RenderPipeline', 'Parsed markdown in worker');
         } catch (error) {
           debug.error('RenderPipeline', 'Worker parsing failed, falling back to sync:', error);
-          result = await this.converter.convert(markdown);
+          result = this.converter.convert(markdown);
         }
       } else {
-        result = await this.converter.convert(markdown);
+        result = this.converter.convert(markdown);
       }
 
       if (this.cancelRequested) return;
@@ -163,7 +181,7 @@ export class RenderPipeline {
         message: 'Sanitizing content...',
       });
 
-      const sanitized = await this.sanitizeContent(result);
+      const sanitized = this.sanitizeContent(result);
 
       if (this.cancelRequested) return;
 
@@ -174,14 +192,14 @@ export class RenderPipeline {
         message: 'Processing content...',
       });
 
-      const transformed = await this.transformContent(sanitized, result, preferences);
+      const transformed = this.transformContent(sanitized, result, preferences);
 
       if (this.cancelRequested) return;
 
       // Stage 4: Insert into DOM
       const template = document.createElement('template');
       template.innerHTML = transformed;
-      
+
       container.innerHTML = '';
       container.appendChild(template.content);
 
@@ -206,13 +224,18 @@ export class RenderPipeline {
       });
 
       debug.info('RenderPipeline', 'Applying theme...');
-      await this.applyTheming(container);
+      this.applyTheming(container);
       debug.info('RenderPipeline', 'Theme applied successfully');
 
       // Cache the result if enabled (to service worker)
       if (useCache && filePath) {
         try {
-          const cacheKey = await this.getCacheKey(filePath, markdown, theme as ThemeName, preferences);
+          const cacheKey = await this.getCacheKey(
+            filePath,
+            markdown,
+            theme as ThemeName,
+            preferences
+          );
 
           const contentHash = await this.generateContentHash(markdown);
 
@@ -225,7 +248,13 @@ export class RenderPipeline {
             cacheKey,
           };
 
-          await this.setCachedResult(cacheKey, cachedResult, filePath, contentHash, theme as ThemeName);
+          await this.setCachedResult(
+            cacheKey,
+            cachedResult,
+            filePath,
+            contentHash,
+            theme as ThemeName
+          );
           debug.debug('RenderPipeline', 'Result cached in service worker');
         } catch (error) {
           debug.error('RenderPipeline', 'Failed to cache result:', error);
@@ -321,12 +350,12 @@ export class RenderPipeline {
   private scheduleIdleEnhancements(container: HTMLElement): void {
     const runEnhancements = () => {
       debug.debug('RenderPipeline', 'Running idle-time enhancements...');
-      
+
       // Batch DOM operations for efficiency
       this.addCopyButtons(container);
       this.setupImageLazyLoading(container);
       this.setupHeadingAnchors(container);
-      
+
       debug.debug('RenderPipeline', 'Idle-time enhancements complete');
     };
 
@@ -386,22 +415,22 @@ export class RenderPipeline {
     theme: ThemeName,
     preferences: Record<string, unknown>
   ): Promise<string> {
-    const response = await chrome.runtime.sendMessage({
+    const response: unknown = await chrome.runtime.sendMessage({
       type: 'CACHE_GENERATE_KEY',
       payload: { filePath, content, theme, preferences },
     });
-    return response.key;
+    return (response as { key: string }).key;
   }
 
   /**
    * Get cached result from service worker
    */
   private async getCachedResult(key: string): Promise<CachedResult | null> {
-    const response = await chrome.runtime.sendMessage({
+    const response: unknown = await chrome.runtime.sendMessage({
       type: 'CACHE_GET',
       payload: { key },
     });
-    return response.result || null;
+    return (response as { result: CachedResult | null }).result || null;
   }
 
   /**
@@ -456,7 +485,7 @@ export class RenderPipeline {
       // Render chunk
       const chunkContainer = document.createElement('div');
       chunkContainer.className = 'mdview-chunk';
-      
+
       await this.render({
         container: chunkContainer,
         markdown: chunk,
@@ -478,7 +507,11 @@ export class RenderPipeline {
    */
   private async renderWithProgressiveHydration(options: RenderOptions): Promise<void> {
     const { container, markdown, preferences = {} } = options;
-    debug.debug('RenderPipeline', 'Starting progressive hydration with preferences:', JSON.stringify(preferences));
+    debug.debug(
+      'RenderPipeline',
+      'Starting progressive hydration with preferences:',
+      JSON.stringify(preferences)
+    );
 
     // Split markdown into sections
     const sections = splitIntoSections(markdown);
@@ -503,7 +536,7 @@ export class RenderPipeline {
     // At this point, the user sees the full document structure!
     // Headings are visible, scroll works naturally
     // No need for scroll restoration!
-    
+
     // Notify that content is visible (remove loading overlay)
     this.notifyProgressThrottled({
       stage: 'parsing',
@@ -512,7 +545,7 @@ export class RenderPipeline {
     });
 
     // Apply theme immediately to skeleton
-    await this.applyTheming(container);
+    this.applyTheming(container);
 
     // ===================================================================
     // PHASE 2: Progressive Hydration
@@ -522,10 +555,10 @@ export class RenderPipeline {
 
     for (let i = 0; i < sections.length; i++) {
       const section = sections[i];
-      
+
       this.notifyProgressThrottled({
         stage: 'parsing',
-        progress: 5 + ((i / sections.length) * 70),
+        progress: 5 + (i / sections.length) * 70,
         message: `Hydrating section ${i + 1}/${sections.length}...`,
       });
 
@@ -537,14 +570,18 @@ export class RenderPipeline {
         }
 
         // Convert markdown to HTML
-        const result = await this.converter.convert(section.markdown);
-        const sanitized = await this.sanitizeContent(result);
-        debug.debug('RenderPipeline', `Hydrating section ${i}: Transforming content with preferences`, JSON.stringify(preferences));
-        const transformed = await this.transformContent(sanitized, result, preferences);
+        const result = this.converter.convert(section.markdown);
+        const sanitized = this.sanitizeContent(result);
+        debug.debug(
+          'RenderPipeline',
+          `Hydrating section ${i}: Transforming content with preferences`,
+          JSON.stringify(preferences)
+        );
+        const transformed = this.transformContent(sanitized, result, preferences);
 
         // Replace skeleton content with actual content
         sectionElement.innerHTML = transformed;
-        
+
         // Mark as hydrated
         SkeletonRenderer.markHydrated(sectionElement);
 
@@ -567,7 +604,11 @@ export class RenderPipeline {
       message: 'Enhancing content...',
     });
 
-    await this.enhanceContentWithWorkers(container, { html: '', metadata: {} } as ConversionResult, false);
+    await this.enhanceContentWithWorkers(
+      container,
+      { html: '', metadata: {} } as ConversionResult,
+      false
+    );
 
     this.notifyProgressThrottled({
       stage: 'complete',
@@ -598,7 +639,7 @@ export class RenderPipeline {
   /**
    * Stage 2: Sanitize content
    */
-  private async sanitizeContent(result: ConversionResult): Promise<string> {
+  private sanitizeContent(result: ConversionResult): string {
     // Use DOMPurify to sanitize
     return domPurifier.sanitize(result.html);
   }
@@ -606,8 +647,16 @@ export class RenderPipeline {
   /**
    * Stage 3: Transform content (process special blocks)
    */
-  private async transformContent(html: string, result: ConversionResult, preferences: Record<string, unknown> = {}): Promise<string> {
-    debug.debug('RenderPipeline', 'Transforming content with preferences:', JSON.stringify(preferences));
+  private transformContent(
+    html: string,
+    result: ConversionResult,
+    preferences: Record<string, unknown> = {}
+  ): string {
+    debug.debug(
+      'RenderPipeline',
+      'Transforming content with preferences:',
+      JSON.stringify(preferences)
+    );
     let transformed = html;
 
     // Add language badges and line numbers to code blocks
@@ -637,7 +686,7 @@ export class RenderPipeline {
   /**
    * Stage 6: Apply theming
    */
-  private async applyTheming(container: HTMLElement): Promise<void> {
+  private applyTheming(container: HTMLElement): void {
     // Theme will be applied by theme engine
     // This is a placeholder for theme-specific transformations
     container.classList.add('mdview-rendered');
@@ -646,13 +695,17 @@ export class RenderPipeline {
   /**
    * Add features to code blocks
    */
-  private addCodeBlockFeatures(html: string, _result: ConversionResult, preferences: Record<string, unknown> = {}): string {
+  private addCodeBlockFeatures(
+    html: string,
+    _result: ConversionResult,
+    preferences: Record<string, unknown> = {}
+  ): string {
     const showLineNumbers = !!preferences.lineNumbers;
     debug.debug('RenderPipeline', `addCodeBlockFeatures: showLineNumbers = ${showLineNumbers}`);
 
     return html.replace(
       /<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
-      (_match, lang, code) => {
+      (_match, lang: string, code: string) => {
         let lineNumbersHtml = '';
         let wrapperClass = 'code-block-wrapper';
         let contentStart = '';
@@ -662,9 +715,12 @@ export class RenderPipeline {
           debug.debug('RenderPipeline', 'Generating line numbers for code block');
           wrapperClass += ' has-line-numbers';
           // Count lines
-          const lineCount = code.split('\n').length;
+          const lines = code.split('\n');
+          const lineCount = lines.length;
           // Generate line numbers column
-          const numbers = Array.from({ length: lineCount }, (_, i) => `<span>${i + 1}</span>`).join('');
+          const numbers = Array.from({ length: lineCount }, (_, i) => `<span>${i + 1}</span>`).join(
+            ''
+          );
           lineNumbersHtml = `<div class="line-numbers-rows">${numbers}</div>`;
           contentStart = '<div class="code-block-content">';
           contentEnd = '</div>';
@@ -694,7 +750,9 @@ export class RenderPipeline {
    * Enhance tables
    */
   private enhanceTables(html: string): string {
-    return html.replace(/<table>/g, '<div class="table-wrapper"><table>').replace(/<\/table>/g, '</table></div>');
+    return html
+      .replace(/<table>/g, '<div class="table-wrapper"><table>')
+      .replace(/<\/table>/g, '</table></div>');
   }
 
   /**
@@ -702,29 +760,31 @@ export class RenderPipeline {
    */
   private addCopyButtons(container: HTMLElement): void {
     const codeBlocks = container.querySelectorAll('.code-block-wrapper');
-    
+
     codeBlocks.forEach((wrapper) => {
       const copyButton = document.createElement('button');
       copyButton.className = 'code-copy-button';
       copyButton.textContent = 'Copy';
       copyButton.setAttribute('aria-label', 'Copy code to clipboard');
 
-      copyButton.addEventListener('click', async () => {
+      copyButton.addEventListener('click', () => {
         const code = wrapper.querySelector('code');
         if (code) {
-          try {
-            await navigator.clipboard.writeText(code.textContent || '');
-            copyButton.textContent = '✓ Copied';
-            setTimeout(() => {
-              copyButton.textContent = 'Copy';
-            }, 2000);
-          } catch (error) {
-            debug.error('RenderPipeline', 'Failed to copy:', error);
-            copyButton.textContent = '✗ Failed';
-            setTimeout(() => {
-              copyButton.textContent = 'Copy';
-            }, 2000);
-          }
+          void (async () => {
+            try {
+              await navigator.clipboard.writeText(code.textContent || '');
+              copyButton.textContent = '✓ Copied';
+              setTimeout(() => {
+                copyButton.textContent = 'Copy';
+              }, 2000);
+            } catch (error) {
+              debug.error('RenderPipeline', 'Failed to copy:', error);
+              copyButton.textContent = '✗ Failed';
+              setTimeout(() => {
+                copyButton.textContent = 'Copy';
+              }, 2000);
+            }
+          })();
         }
       });
 
@@ -740,7 +800,7 @@ export class RenderPipeline {
    */
   private setupImageLazyLoading(container: HTMLElement): void {
     const images = container.querySelectorAll('img[loading="lazy"]');
-    
+
     if ('IntersectionObserver' in window) {
       const imageObserver = new IntersectionObserver(
         (entries) => {
@@ -791,7 +851,7 @@ export class RenderPipeline {
    */
   private setupHeadingAnchors(container: HTMLElement): void {
     const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    
+
     headings.forEach((heading) => {
       if (heading.id) {
         heading.classList.add('heading-with-anchor');
@@ -871,4 +931,3 @@ export class RenderPipeline {
 
 // Export singleton
 export const renderPipeline = new RenderPipeline();
-

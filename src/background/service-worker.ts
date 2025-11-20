@@ -111,7 +111,10 @@ class StateManager {
     if (!this.listeners.has(path)) {
       this.listeners.set(path, new Set());
     }
-    this.listeners.get(path)!.add(listener);
+    const pathListeners = this.listeners.get(path);
+    if (pathListeners) {
+      pathListeners.add(listener);
+    }
 
     return () => {
       this.listeners.get(path)?.delete(listener);
@@ -130,7 +133,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   void (async () => {
     await initializationPromise;
 
-    if (details.reason === 'install') {
+    if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
       // First-time installation
       debug.log('MDView', 'First-time installation detected');
       // Could open a welcome page here
@@ -147,67 +150,64 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 // Message handler
-chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, sender, sendResponse) => {
-  debug.log('MDView', 'Received message:', message.type, 'from:', sender.tab?.id);
+chrome.runtime.onMessage.addListener(
+  (message: { type: string; payload?: unknown }, sender, sendResponse) => {
+    debug.log('MDView', 'Received message:', message.type, 'from:', sender.tab?.id);
 
-  void (async () => {
-    try {
-      // Wait for initialization to complete before processing messages
-      await initializationPromise;
+    void (async () => {
+      try {
+        // Wait for initialization to complete before processing messages
+        await initializationPromise;
 
-      switch (message.type) {
-        case 'GET_STATE':
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-          sendResponse({ state: await stateManager.getState() });
-          break;
+        switch (message.type) {
+          case 'GET_STATE':
+            sendResponse({ state: await stateManager.getState() });
+            break;
 
-        case 'UPDATE_PREFERENCES': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { preferences } = message.payload;
-          debug.log('MDView-Background', 'Processing UPDATE_PREFERENCES:', preferences);
+          case 'UPDATE_PREFERENCES': {
+            const payload = message.payload as { preferences: Partial<AppState['preferences']> };
+            const { preferences } = payload;
+            debug.log('MDView-Background', 'Processing UPDATE_PREFERENCES:', preferences);
 
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          await stateManager.updatePreferences(preferences);
-          sendResponse({ success: true });
+            await stateManager.updatePreferences(preferences);
+            sendResponse({ success: true });
 
-          // Always broadcast preference updates to tabs so they can react (e.g. line numbers)
-          // This fixes the issue where toggles didn't work if syncTabs was false
-          debug.log('MDView-Background', 'Broadcasting preferences update to tabs');
-          const tabs = await chrome.tabs.query({});
-          tabs.forEach((tab) => {
-            if (tab.id) {
-              void chrome.tabs
-                .sendMessage(tab.id, {
-                  type: 'PREFERENCES_UPDATED',
-                  payload: { preferences: stateManager.getState().preferences },
-                })
-                .catch(() => {
+            // Always broadcast preference updates to tabs so they can react (e.g. line numbers)
+            // This fixes the issue where toggles didn't work if syncTabs was false
+            debug.log('MDView-Background', 'Broadcasting preferences update to tabs');
+            const tabs = await chrome.tabs.query({});
+            tabs.forEach((tab) => {
+              if (tab.id) {
+                const tabId = tab.id;
+                void (async () => {
+                  const state = await stateManager.getState();
+                  return chrome.tabs.sendMessage(tabId, {
+                    type: 'PREFERENCES_UPDATED',
+                    payload: { preferences: state.preferences },
+                  });
+                })().catch(() => {
                   /* Tab may not have content script */
                 });
-            }
-          });
-          break;
-        }
+              }
+            });
+            break;
+          }
 
-        case 'APPLY_THEME': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { theme } = message.payload;
-          debug.log('MDView-Background', 'Processing APPLY_THEME:', theme);
-          
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          await stateManager.updatePreferences({ theme });
-          debug.log('MDView-Background', 'Preferences updated');
-          
-          sendResponse({ success: true });
+          case 'APPLY_THEME': {
+            const payload = message.payload as { theme: ThemeName };
+            const { theme } = payload;
+            debug.log('MDView-Background', 'Processing APPLY_THEME:', theme);
 
-          // Broadcast to all tabs if syncTabs is enabled OR just to ensure current tab gets it
-          // Note: The popup sends this, so we usually want to notify all tabs or at least the active one.
-          // The current logic only broadcasts if syncTabs is true. This might be the bug if syncTabs is false.
-          // Let's log the logic branch.
-          const syncTabs = stateManager.getState().preferences.syncTabs;
-          debug.log('MDView-Background', 'Sync tabs enabled:', syncTabs);
+            await stateManager.updatePreferences({ theme });
+            debug.log('MDView-Background', 'Preferences updated');
 
-          if (true) { // FORCE BROADCAST FOR DEBUGGING - logic below might be too restrictive
+            sendResponse({ success: true });
+
+            // Broadcast to all tabs if syncTabs is enabled OR just to ensure current tab gets it
+            // Note: The popup sends this, so we usually want to notify all tabs or at least the active one.
+            // The current logic only broadcasts if syncTabs is true. This might be the bug if syncTabs is false.
+            // Let's log the logic branch.
+            // Always broadcast theme changes to all tabs to ensure proper theme application
             debug.log('MDView-Background', 'Broadcasting theme change to all tabs');
             const tabs = await chrome.tabs.query({});
             tabs.forEach((tab) => {
@@ -218,121 +218,128 @@ chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, s
                     type: 'APPLY_THEME',
                     payload: { theme },
                   })
-                  .catch((err) => {
+                  .catch((err: Error) => {
                     // Tab may not have content script
-                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                     debug.log('MDView-Background', 'Failed to send to tab (likely no content script):', tab.id, err.message);
+                    debug.log(
+                      'MDView-Background',
+                      'Failed to send to tab (likely no content script):',
+                      tab.id,
+                      err.message
+                    );
                   });
               }
             });
+            break;
           }
-          break;
-        }
 
-        case 'CACHE_GENERATE_KEY': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { filePath, content, theme, preferences } = message.payload;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          const key = await cacheManager.generateKey(filePath, content, theme as ThemeName, preferences);
-          sendResponse({ key });
-          break;
-        }
+          case 'CACHE_GENERATE_KEY': {
+            const payload = message.payload as {
+              filePath: string;
+              content: string;
+              theme: ThemeName;
+              preferences: Record<string, unknown>;
+            };
+            const { filePath, content, theme, preferences } = payload;
+            const key = await cacheManager.generateKey(filePath, content, theme, preferences);
+            sendResponse({ key });
+            break;
+          }
 
-        case 'CACHE_GET': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { key } = message.payload;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          const result = await cacheManager.get(key);
-          sendResponse({ result });
-          break;
-        }
+          case 'CACHE_GET': {
+            const payload = message.payload as { key: string };
+            const { key } = payload;
+            const result = cacheManager.get(key);
+            sendResponse({ result });
+            break;
+          }
 
-        case 'CACHE_SET': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { key, result, filePath, contentHash, theme } = message.payload;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          await cacheManager.set(key, result, filePath, contentHash, theme as ThemeName);
-          sendResponse({ success: true });
-          break;
-        }
+          case 'CACHE_SET': {
+            const payload = message.payload as {
+              key: string;
+              result: import('../types').CachedResult;
+              filePath: string;
+              contentHash: string;
+              theme: ThemeName;
+            };
+            const { key, result, filePath, contentHash, theme } = payload;
+            cacheManager.set(key, result, filePath, contentHash, theme);
+            sendResponse({ success: true });
+            break;
+          }
 
-        case 'CACHE_INVALIDATE': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { key } = message.payload;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          cacheManager.invalidate(key);
-          sendResponse({ success: true });
-          break;
-        }
+          case 'CACHE_INVALIDATE': {
+            const payload = message.payload as { key: string };
+            const { key } = payload;
+            cacheManager.invalidate(key);
+            sendResponse({ success: true });
+            break;
+          }
 
-        case 'CACHE_INVALIDATE_BY_PATH': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { filePath } = message.payload;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          cacheManager.invalidateByPath(filePath);
-          sendResponse({ success: true });
-          break;
-        }
+          case 'CACHE_INVALIDATE_BY_PATH': {
+            const payload = message.payload as { filePath: string };
+            const { filePath } = payload;
+            cacheManager.invalidateByPath(filePath);
+            sendResponse({ success: true });
+            break;
+          }
 
-        case 'CACHE_STATS': {
-          const stats = cacheManager.getStats();
-          sendResponse({ stats });
-          break;
-        }
+          case 'CACHE_STATS': {
+            const stats = cacheManager.getStats();
+            sendResponse({ stats });
+            break;
+          }
 
-        case 'REPORT_ERROR':
-          debug.error('MDView', 'Error reported:', message.payload);
-          sendResponse({ success: true });
-          break;
+          case 'REPORT_ERROR':
+            debug.error('MDView', 'Error reported:', message.payload);
+            sendResponse({ success: true });
+            break;
 
-        case 'CHECK_FILE_CHANGED': {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { url, lastHash } = message.payload;
-          try {
-             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-             const response = await fetch(url);
-             if (!response.ok) {
+          case 'CHECK_FILE_CHANGED': {
+            const payload = message.payload as { url: string; lastHash: string };
+            const { url, lastHash } = payload;
+            try {
+              const response = await fetch(url);
+              if (!response.ok) {
                 sendResponse({ changed: false, error: `Fetch failed: ${response.status}` });
                 break;
-             }
-             
-             const text = await response.text();
-             
-             // Compute hash (simple djb2-like or similar since we don't have crypto.subtle here easily without async)
-             // Wait, we can use crypto.subtle in service workers!
-             const msgBuffer = new TextEncoder().encode(text);
-             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-             const hashArray = Array.from(new Uint8Array(hashBuffer));
-             const currentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-             
-             const changed = currentHash !== lastHash;
-             sendResponse({ changed, newHash: currentHash });
-          } catch (error) {
-             debug.error('MDView-Background', 'File check failed:', error);
-             sendResponse({ changed: false, error: String(error) });
+              }
+
+              const text = await response.text();
+
+              // Compute hash (simple djb2-like or similar since we don't have crypto.subtle here easily without async)
+              // Wait, we can use crypto.subtle in service workers!
+              const msgBuffer = new TextEncoder().encode(text);
+              const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+              const hashArray = Array.from(new Uint8Array(hashBuffer));
+              const currentHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
+              const changed = currentHash !== lastHash;
+              sendResponse({ changed, newHash: currentHash });
+            } catch (error) {
+              debug.error('MDView-Background', 'File check failed:', error);
+              sendResponse({ changed: false, error: String(error) });
+            }
+            break;
           }
-          break;
+
+          default:
+            debug.warn('MDView', 'Unknown message type:', message.type);
+            sendResponse({ error: 'Unknown message type' });
         }
-
-        default:
-          debug.warn('MDView', 'Unknown message type:', message.type);
-          sendResponse({ error: 'Unknown message type' });
+      } catch (error) {
+        debug.error('MDView', 'Error handling message:', error);
+        sendResponse({ error: String(error) });
       }
-    } catch (error) {
-      debug.error('MDView', 'Error handling message:', error);
-      sendResponse({ error: String(error) });
-    }
-  })();
+    })();
 
-  // Return true to indicate async response
-  return true;
-});
+    // Return true to indicate async response
+    return true;
+  }
+);
 
 // Export for debugging
 if (typeof window !== 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-  (window as any).mdviewState = stateManager;
+  (window as { mdviewState?: StateManager }).mdviewState = stateManager;
 }
 
 debug.log('MDView', 'Service worker initialized');
-

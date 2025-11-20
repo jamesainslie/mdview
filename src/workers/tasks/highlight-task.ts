@@ -4,6 +4,7 @@
  */
 
 import hljs from 'highlight.js/lib/core';
+import type { LanguageFn } from 'highlight.js';
 import type { HighlightTaskPayload, HighlightTaskResult } from '../../types';
 
 // Import common languages
@@ -43,7 +44,7 @@ import ini from 'highlight.js/lib/languages/ini';
 import properties from 'highlight.js/lib/languages/properties';
 
 // Register all languages
-const languages: Record<string, any> = {
+const languages: Record<string, LanguageFn> = {
   javascript,
   typescript,
   python,
@@ -105,7 +106,7 @@ const languageAliases: Record<string, string> = {
 /**
  * Handle syntax highlighting task
  */
-export async function handleHighlightTask(payload: unknown): Promise<HighlightTaskResult> {
+export function handleHighlightTask(payload: unknown): HighlightTaskResult {
   const { code, language } = payload as HighlightTaskPayload;
 
   // Normalize language name
@@ -157,5 +158,3 @@ function escapeHtml(text: string): string {
   div.textContent = text;
   return div.innerHTML;
 }
-
-

@@ -4,6 +4,7 @@
  */
 
 import hljs from 'highlight.js/lib/core';
+import type { LanguageFn } from 'highlight.js';
 import { debug } from '../utils/debug-logger';
 
 // Import common languages immediately
@@ -43,7 +44,7 @@ export class SyntaxHighlighter {
   ]);
 
   // Map of language module loaders
-  private languageModules: Record<string, () => Promise<any>> = {
+  private languageModules: Record<string, () => Promise<{ default: LanguageFn }>> = {
     go: () => import('highlight.js/lib/languages/go'),
     rust: () => import('highlight.js/lib/languages/rust'),
     java: () => import('highlight.js/lib/languages/java'),
@@ -122,7 +123,7 @@ export class SyntaxHighlighter {
         };
       } else {
         // Fallback: auto-detect
-        return await this.highlightAuto(code);
+        return this.highlightAuto(code);
       }
     } catch (error) {
       console.error(`[SyntaxHighlighter] Error highlighting ${normalizedLang}:`, error);
@@ -138,7 +139,7 @@ export class SyntaxHighlighter {
   /**
    * Auto-detect and highlight code
    */
-  async highlightAuto(code: string): Promise<HighlightResult> {
+  highlightAuto(code: string): HighlightResult {
     try {
       const result = hljs.highlightAuto(code);
       return {
@@ -147,7 +148,7 @@ export class SyntaxHighlighter {
         relevance: result.relevance || 0,
       };
     } catch (error) {
-      debug.error('SyntaxHighlighter',' Auto-detect error:', error);
+      debug.error('SyntaxHighlighter', ' Auto-detect error:', error);
       return {
         html: this.escapeHtml(code),
         language: 'plaintext',
@@ -159,7 +160,7 @@ export class SyntaxHighlighter {
   /**
    * Detect code language
    */
-  async detectLanguage(code: string): Promise<DetectionResult> {
+  detectLanguage(code: string): DetectionResult {
     try {
       const result = hljs.highlightAuto(code);
       return {
@@ -173,7 +174,7 @@ export class SyntaxHighlighter {
           : undefined,
       };
     } catch (error) {
-      debug.error('SyntaxHighlighter',' Language detection error:', error);
+      debug.error('SyntaxHighlighter', ' Language detection error:', error);
       return {
         language: 'plaintext',
         relevance: 0,
@@ -201,7 +202,7 @@ export class SyntaxHighlighter {
       const module = await loader();
       hljs.registerLanguage(language, module.default);
       this.loadedLanguages.add(language);
-      debug.log("SyntaxHighlighter", ` Loaded language: ${language}`);
+      debug.log('SyntaxHighlighter', ` Loaded language: ${language}`);
     } catch (error) {
       console.error(`[SyntaxHighlighter] Failed to load language ${language}:`, error);
     }
@@ -211,10 +212,7 @@ export class SyntaxHighlighter {
    * Get list of supported languages
    */
   getSupportedLanguages(): string[] {
-    return [
-      ...this.loadedLanguages,
-      ...Object.keys(this.languageModules),
-    ].sort();
+    return [...this.loadedLanguages, ...Object.keys(this.languageModules)].sort();
   }
 
   /**
@@ -238,10 +236,10 @@ export class SyntaxHighlighter {
 
       if (langClass) {
         const lang = langClass.replace('language-', '');
-        
+
         // Check if code block is large (> 1000 lines)
         if (code.split('\n').length > 1000) {
-          debug.log("SyntaxHighlighter", ` Large code block detected, highlighting may take time`);
+          debug.log('SyntaxHighlighter', ` Large code block detected, highlighting may take time`);
         }
 
         try {
@@ -250,7 +248,7 @@ export class SyntaxHighlighter {
           block.classList.add('hljs', 'highlighted');
           block.setAttribute('data-language', result.language);
         } catch (error) {
-          debug.error('SyntaxHighlighter',' Error highlighting block:', error);
+          debug.error('SyntaxHighlighter', ' Error highlighting block:', error);
         }
       }
     }
@@ -265,7 +263,7 @@ export class SyntaxHighlighter {
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(
         (entries) => {
-          entries.forEach(async (entry) => {
+          entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const block = entry.target as HTMLElement;
               const code = block.textContent || '';
@@ -274,15 +272,17 @@ export class SyntaxHighlighter {
 
               if (langClass) {
                 const lang = langClass.replace('language-', '');
-                
-                try {
-                  const result = await this.highlight(code, lang);
-                  block.innerHTML = result.html;
-                  block.classList.add('hljs', 'highlighted');
-                  block.setAttribute('data-language', result.language);
-                } catch (error) {
-                  debug.error('SyntaxHighlighter',' Error highlighting block:', error);
-                }
+
+                void (async () => {
+                  try {
+                    const result = await this.highlight(code, lang);
+                    block.innerHTML = result.html;
+                    block.classList.add('hljs', 'highlighted');
+                    block.setAttribute('data-language', result.language);
+                  } catch (error) {
+                    debug.error('SyntaxHighlighter', ' Error highlighting block:', error);
+                  }
+                })();
               }
 
               observer.unobserve(block);
@@ -298,7 +298,9 @@ export class SyntaxHighlighter {
       codeBlocks.forEach((block) => observer.observe(block));
     } else {
       // Fallback: highlight all immediately
-      this.highlightAll(container).catch((error) => debug.error("SyntaxHighlighter", "Catch error:", error));
+      this.highlightAll(container).catch((error) =>
+        debug.error('SyntaxHighlighter', 'Catch error:', error)
+      );
     }
   }
 
@@ -324,12 +326,15 @@ export class SyntaxHighlighter {
    * Note: Dynamic CSS imports don't work in Chrome extensions, so we rely on
    * the theme engine's CSS custom properties for styling instead.
    */
-  async setTheme(themeName: string): Promise<void> {
+  setTheme(themeName: string): void {
     // In Chrome extensions, dynamic CSS imports with ?inline don't work
     // The theme engine applies CSS custom properties that style the hljs classes
     // So we just log and skip the highlight.js theme loading
-    debug.log("SyntaxHighlighter", `Syntax theme ${themeName} will be styled via theme engine CSS custom properties`);
-    
+    debug.log(
+      'SyntaxHighlighter',
+      `Syntax theme ${themeName} will be styled via theme engine CSS custom properties`
+    );
+
     // Note: The .hljs-* classes are styled by our theme system through CSS variables
     // defined in src/content/content.css and theme files
   }
@@ -346,7 +351,6 @@ export const SYNTAX_THEME_MAP: Record<string, string> = {
   'catppuccin-frappe': 'github-dark',
   'catppuccin-macchiato': 'github-dark',
   'catppuccin-mocha': 'github-dark',
-  'monokai': 'monokai',
+  monokai: 'monokai',
   'monokai-pro': 'monokai',
 };
-

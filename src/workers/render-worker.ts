@@ -22,19 +22,21 @@ self.onmessage = async (event: MessageEvent) => {
     // Route to appropriate task handler
     switch (task.type) {
       case 'parse':
-        result = await handleParseTask(task.payload);
+        result = handleParseTask(task.payload);
         break;
 
       case 'highlight':
-        result = await handleHighlightTask(task.payload);
+        result = handleHighlightTask(task.payload);
         break;
 
       case 'mermaid':
         result = await handleMermaidTask(task.payload);
         break;
 
-      default:
-        throw new Error(`Unknown task type: ${task.type}`);
+      default: {
+        const exhaustiveCheck: never = task.type;
+        throw new Error(`Unknown task type: ${String(exhaustiveCheck)}`);
+      }
     }
 
     // Send success response
@@ -68,4 +70,3 @@ self.onerror = (event: string | Event) => {
 self.onunhandledrejection = (event: PromiseRejectionEvent) => {
   console.error('[RenderWorker] Unhandled promise rejection:', event.reason);
 };
-

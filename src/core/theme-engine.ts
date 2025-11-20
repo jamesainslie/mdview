@@ -50,8 +50,12 @@ export class ThemeEngine {
    * Apply theme to document
    */
   async applyTheme(theme: Theme | ThemeName): Promise<void> {
-    debug.log('ThemeEngine', `applyTheme called with:`, typeof theme === 'string' ? theme : theme.name);
-    
+    debug.log(
+      'ThemeEngine',
+      `applyTheme called with:`,
+      typeof theme === 'string' ? theme : theme.name
+    );
+
     // Load theme if name provided
     const themeObj = typeof theme === 'string' ? await this.loadTheme(theme) : theme;
     debug.log('ThemeEngine', `Theme loaded/resolved:`, themeObj.name);
@@ -60,34 +64,38 @@ export class ThemeEngine {
     // Since ThemeEngine runs in content script, we need to fetch preferences.
     // However, for performance, we might rely on preferences being passed or fetched separately.
     // For this implementation, we'll try to fetch from storage if possible, but ideally applyTheme receives overrides.
-    
+
     // Fetch overrides from storage
-    const overrides: Partial<Theme['typography']> & { maxWidth?: number; useMaxWidth?: boolean } = {};
+    const overrides: Partial<Theme['typography']> & { maxWidth?: number; useMaxWidth?: boolean } =
+      {};
     try {
-        const storage = (await chrome.storage.sync.get('preferences')) as {
-          preferences?: Partial<import('../types').AppState['preferences']>;
-        };
-        if (storage.preferences) {
-            const p = storage.preferences;
-            if (p.fontFamily) overrides.fontFamily = p.fontFamily;
-            if (p.codeFontFamily) overrides.codeFontFamily = p.codeFontFamily;
-            if (p.lineHeight) overrides.baseLineHeight = p.lineHeight;
-            if (p.maxWidth) overrides.maxWidth = p.maxWidth;
-            overrides.useMaxWidth = p.useMaxWidth;
-        }
+      const storage = (await chrome.storage.sync.get('preferences')) as {
+        preferences?: Partial<import('../types').AppState['preferences']>;
+      };
+      if (storage.preferences) {
+        const p = storage.preferences;
+        if (p.fontFamily) overrides.fontFamily = p.fontFamily;
+        if (p.codeFontFamily) overrides.codeFontFamily = p.codeFontFamily;
+        if (p.lineHeight) overrides.baseLineHeight = p.lineHeight;
+        if (p.maxWidth) overrides.maxWidth = p.maxWidth;
+        overrides.useMaxWidth = p.useMaxWidth;
+      }
     } catch (e) {
-        debug.warn('ThemeEngine', 'Failed to load preference overrides', e);
+      debug.warn('ThemeEngine', 'Failed to load preference overrides', e);
     }
 
     // Compile to CSS variables with overrides
     const cssVars = this.compileToCSSVariables(themeObj, overrides);
-    
+
     // Apply transition class
     const root = document.documentElement;
     root.classList.add('theme-transitioning');
-    
+
     // Update CSS variables on both :root and documentElement for immediate effect
-    debug.log('ThemeEngine', `Applying ${Object.keys(cssVars).length} CSS variables to :root and html`);
+    debug.log(
+      'ThemeEngine',
+      `Applying ${Object.keys(cssVars).length} CSS variables to :root and html`
+    );
     Object.entries(cssVars).forEach(([key, value]) => {
       root.style.setProperty(key, value);
       // Force immediate style recalculation for critical color variables
@@ -99,16 +107,16 @@ export class ThemeEngine {
 
     // Apply max-width logic
     if (overrides.useMaxWidth) {
-         // If "Use Full Width" is checked, set max-width to none or 100%
-         root.style.setProperty('--md-max-width', '100%');
+      // If "Use Full Width" is checked, set max-width to none or 100%
+      root.style.setProperty('--md-max-width', '100%');
     } else if (overrides.maxWidth) {
-        // Apply custom max-width if set
-        root.style.setProperty('--md-max-width', `${overrides.maxWidth}px`);
+      // Apply custom max-width if set
+      root.style.setProperty('--md-max-width', `${overrides.maxWidth}px`);
     } else {
-         // Default
-         root.style.setProperty('--md-max-width', '980px'); 
+      // Default
+      root.style.setProperty('--md-max-width', '980px');
     }
-    
+
     // Set data attributes
     root.setAttribute('data-theme', themeObj.name);
     root.setAttribute('data-theme-variant', themeObj.variant);
@@ -118,7 +126,7 @@ export class ThemeEngine {
     document.body.style.backgroundColor = themeObj.colors.background;
     document.documentElement.style.color = themeObj.colors.foreground;
     document.body.style.color = themeObj.colors.foreground;
-    
+
     // Update syntax theme
     debug.log('ThemeEngine', `Updating syntax theme to: ${themeObj.syntaxTheme}`);
     await this.updateSyntaxTheme(themeObj.syntaxTheme);
@@ -131,17 +139,17 @@ export class ThemeEngine {
     } catch (error) {
       debug.error('ThemeEngine', 'Failed to update mermaid theme:', error);
     }
-    
+
     // Remove transition class after a brief moment (non-blocking)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         root.classList.remove('theme-transitioning');
       });
     });
-    
+
     // Save current theme
     this.currentTheme = themeObj;
-    
+
     debug.log('ThemeEngine', `Successfully applied theme: ${themeObj.name}`);
   }
 
@@ -193,7 +201,10 @@ export class ThemeEngine {
   /**
    * Compile theme to CSS variables
    */
-  compileToCSSVariables(theme: Theme, overrides: Partial<Theme['typography']> = {}): Record<string, string> {
+  compileToCSSVariables(
+    theme: Theme,
+    overrides: Partial<Theme['typography']> = {}
+  ): Record<string, string> {
     return {
       // Colors
       '--md-bg': theme.colors.background,
@@ -228,7 +239,8 @@ export class ThemeEngine {
 
       // Typography (with overrides)
       '--md-font-family': overrides.fontFamily || theme.typography.fontFamily,
-      '--md-font-family-heading': theme.typography.headingFontFamily || overrides.fontFamily || theme.typography.fontFamily,
+      '--md-font-family-heading':
+        theme.typography.headingFontFamily || overrides.fontFamily || theme.typography.fontFamily,
       '--md-font-family-code': overrides.codeFontFamily || theme.typography.codeFontFamily,
       '--md-font-size': theme.typography.baseFontSize,
       '--md-line-height': (overrides.baseLineHeight || theme.typography.baseLineHeight).toString(),
@@ -258,8 +270,7 @@ export class ThemeEngine {
   private async updateSyntaxTheme(syntaxTheme: string): Promise<void> {
     try {
       const { syntaxHighlighter } = await import('../renderers/syntax-highlighter');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      await syntaxHighlighter.setTheme(syntaxTheme);
+      syntaxHighlighter.setTheme(syntaxTheme);
     } catch (error) {
       debug.error('ThemeEngine', 'Failed to update syntax theme:', error);
     }
@@ -268,4 +279,3 @@ export class ThemeEngine {
 
 // Export singleton
 export const themeEngine = new ThemeEngine();
-
