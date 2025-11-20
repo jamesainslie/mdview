@@ -29,7 +29,7 @@ export class FileScanner {
     if (contentType && this.MARKDOWN_MIME_TYPES.includes(contentType)) {
       return true;
     }
-    
+
     // For web, if content type is explicitly HTML, do not activate
     // (prevents rendering on GitHub UI pages which end in .md)
     if (isWeb && (contentType === 'text/html' || contentType === 'application/xhtml+xml')) {
@@ -65,7 +65,7 @@ export class FileScanner {
    * After rendering (or for updates), we use a hidden iframe hack to read local files
    * because direct fetch() is blocked by CORS for file:// URLs.
    */
-  static async readFileContent(forceFetch = false): Promise<string> {
+  static readFileContent(forceFetch = false): string {
     // For file:// URLs, Chrome displays the content in a <pre> tag
     // Initial load check
     if (!forceFetch) {
@@ -75,15 +75,15 @@ export class FileScanner {
       }
       // If body is not cleared yet
       if (!document.getElementById('mdview-container')) {
-         return document.body.textContent || '';
+        return document.body.textContent || '';
       }
     }
-    
+
     // If we need to force fetch (watch mode) or if main DOM is overwritten,
-    // we can't use fetch() due to CORS on file://. 
+    // we can't use fetch() due to CORS on file://.
     // This method is only called by watchFile which handles the iframe logic separately.
     // But if we need a one-off read... we can't easily do it without the iframe.
-    
+
     // Fallback: if this is called unexpectedly with forceFetch outside of watchFile context,
     // we try to read whatever is in the DOM, which might be stale/rendered.
     // Ideally, watchFile should handle the source reading itself via iframe.
@@ -97,7 +97,7 @@ export class FileScanner {
     const msgBuffer = new TextEncoder().encode(content);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   /**
@@ -111,35 +111,38 @@ export class FileScanner {
 
     debug.info('FileScanner', `Starting background-delegated file watcher for ${fileUrl}`);
 
-    const checkForChanges = async () => {
-      try {
-        debug.log('FileScanner', 'Checking for file changes via background...');
-        
-        const response = await chrome.runtime.sendMessage({
-          type: 'CHECK_FILE_CHANGED',
-          payload: {
-            url: fileUrl,
-            lastHash
-          }
-        });
+    const checkForChanges = () => {
+      void (async () => {
+        try {
+          debug.log('FileScanner', 'Checking for file changes via background...');
 
-        if (response.error) {
-           debug.warn('FileScanner', 'Background check error:', response.error);
-           return;
-        }
+          const response: unknown = await chrome.runtime.sendMessage({
+            type: 'CHECK_FILE_CHANGED',
+            payload: {
+              url: fileUrl,
+              lastHash,
+            },
+          });
+          const typedResponse = response as { error?: string; changed?: boolean; newHash?: string };
 
-        if (response.changed) {
-          debug.info('FileScanner', 'File change detected (hash mismatch)');
-          if (response.newHash) {
-             lastHash = response.newHash;
+          if (typedResponse.error) {
+            debug.warn('FileScanner', 'Background check error:', typedResponse.error);
+            return;
           }
-          callback();
-        } else {
-          debug.log('FileScanner', 'No change detected');
+
+          if (typedResponse.changed) {
+            debug.info('FileScanner', 'File change detected (hash mismatch)');
+            if (typedResponse.newHash) {
+              lastHash = typedResponse.newHash;
+            }
+            callback();
+          } else {
+            debug.log('FileScanner', 'No change detected');
+          }
+        } catch (error) {
+          debug.error('FileScanner', 'Error communicating with background:', error);
         }
-      } catch (error) {
-        debug.error('FileScanner', 'Error communicating with background:', error);
-      }
+      })();
     };
 
     // Start polling
@@ -177,4 +180,3 @@ export class FileScanner {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 }
-

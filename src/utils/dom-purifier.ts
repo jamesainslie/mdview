@@ -132,9 +132,10 @@ export class DOMPurifierUtil {
    */
   static getRemovedElements(content: string): string[] {
     const removed: string[] = [];
-    
+
     DOMPurify.addHook('uponSanitizeElement', (_node, data) => {
-      if (data.allowedTags[data.tagName as keyof typeof data.allowedTags] === false) {
+      const allowedTags = data.allowedTags as Record<string, boolean> | undefined;
+      if (allowedTags && allowedTags[data.tagName] === false) {
         removed.push(data.tagName);
       }
     });
@@ -163,4 +164,3 @@ export class DOMPurifierUtil {
 
 // Export singleton for convenience
 export const domPurifier = DOMPurifierUtil;
-

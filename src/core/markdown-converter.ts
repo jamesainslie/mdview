@@ -8,11 +8,7 @@ import markdownItAttrs from 'markdown-it-attrs';
 import markdownItAnchor from 'markdown-it-anchor';
 import markdownItTaskLists from 'markdown-it-task-lists';
 import * as emojiPlugin from 'markdown-it-emoji';
-import type {
-  ConversionResult,
-  ParseError,
-  ValidationResult,
-} from '../types';
+import type { ConversionResult, ParseError, ValidationResult } from '../types';
 
 export interface ConvertOptions {
   baseUrl?: string;
@@ -76,7 +72,8 @@ export class MarkdownConverter {
     });
 
     // markdown-it-emoji: Emoji support
-    this.md.use((emojiPlugin as any).full || emojiPlugin);
+    const emojiPluginToUse = (emojiPlugin as { full?: typeof emojiPlugin }).full || emojiPlugin;
+    this.md.use(emojiPluginToUse);
 
     // markdown-it-footnote: Footnotes support
     // TODO: markdown-it-footnote has ESM export issues, will be fixed in future version
@@ -87,9 +84,11 @@ export class MarkdownConverter {
   }
 
   private addMermaidRule(): void {
-    const defaultFenceRenderer = this.md.renderer.rules.fence || function (tokens, idx, options, _env, self) {
-      return self.renderToken(tokens, idx, options);
-    };
+    const defaultFenceRenderer =
+      this.md.renderer.rules.fence ||
+      function (tokens, idx, options, _env, self) {
+        return self.renderToken(tokens, idx, options);
+      };
 
     this.md.renderer.rules.fence = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
@@ -134,9 +133,11 @@ export class MarkdownConverter {
     };
 
     // Add heading metadata extraction
-    const defaultHeadingOpenRenderer = this.md.renderer.rules.heading_open || function (tokens, idx, options, _env, self) {
-      return self.renderToken(tokens, idx, options);
-    };
+    const defaultHeadingOpenRenderer =
+      this.md.renderer.rules.heading_open ||
+      function (tokens, idx, options, _env, self) {
+        return self.renderToken(tokens, idx, options);
+      };
 
     this.md.renderer.rules.heading_open = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
@@ -162,17 +163,20 @@ export class MarkdownConverter {
     };
 
     // Add image metadata extraction
-    const defaultImageRenderer = this.md.renderer.rules.image || function (tokens, idx, options, _env, self) {
-      return self.renderToken(tokens, idx, options);
-    };
+    const defaultImageRenderer =
+      this.md.renderer.rules.image ||
+      function (tokens, idx, options, _env, self) {
+        return self.renderToken(tokens, idx, options);
+      };
 
     this.md.renderer.rules.image = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
       const srcIndex = token.attrIndex('src');
-      const src = srcIndex >= 0 ? token.attrs![srcIndex][1] : '';
+      const attrs = token.attrs || [];
+      const src = srcIndex >= 0 ? attrs[srcIndex][1] : '';
       const alt = token.content;
       const titleIndex = token.attrIndex('title');
-      const title = titleIndex >= 0 ? token.attrs![titleIndex][1] : undefined;
+      const title = titleIndex >= 0 ? attrs[titleIndex][1] : undefined;
 
       this.metadata.images.push({
         src,
@@ -185,14 +189,17 @@ export class MarkdownConverter {
     };
 
     // Add link metadata extraction
-    const defaultLinkOpenRenderer = this.md.renderer.rules.link_open || function (tokens, idx, options, _env, self) {
-      return self.renderToken(tokens, idx, options);
-    };
+    const defaultLinkOpenRenderer =
+      this.md.renderer.rules.link_open ||
+      function (tokens, idx, options, _env, self) {
+        return self.renderToken(tokens, idx, options);
+      };
 
     this.md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
       const hrefIndex = token.attrIndex('href');
-      const href = hrefIndex >= 0 ? token.attrs![hrefIndex][1] : '';
+      const attrs = token.attrs || [];
+      const href = hrefIndex >= 0 ? attrs[hrefIndex][1] : '';
       const nextToken = tokens[idx + 1];
       const text = nextToken && nextToken.type === 'inline' ? nextToken.content : '';
 
@@ -209,7 +216,7 @@ export class MarkdownConverter {
   /**
    * Convert markdown string to HTML
    */
-  async convert(markdown: string, _options?: ConvertOptions): Promise<ConversionResult> {
+  convert(markdown: string, _options?: ConvertOptions): ConversionResult {
     // Reset metadata
     this.metadata = {
       wordCount: 0,
@@ -279,7 +286,10 @@ export class MarkdownConverter {
   /**
    * Register a custom plugin
    */
-  registerPlugin(plugin: (md: MarkdownIt, options?: any) => void, options?: any): void {
+  registerPlugin(
+    plugin: (md: MarkdownIt, options?: Record<string, unknown>) => void,
+    options?: Record<string, unknown>
+  ): void {
     this.md.use(plugin, options);
   }
 
@@ -307,4 +317,3 @@ export class MarkdownConverter {
 
 // Export singleton instance
 export const markdownConverter = new MarkdownConverter();
-

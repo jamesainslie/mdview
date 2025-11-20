@@ -32,7 +32,7 @@ class PopupManager {
       if (areaName === 'sync' && changes.preferences) {
         const newPreferences = changes.preferences.newValue as Partial<AppState['preferences']>;
         debug.log('Popup', 'Storage changed, updating UI:', newPreferences);
-        
+
         if (this.state) {
           this.state.preferences = { ...this.state.preferences, ...newPreferences };
           this.updateUI();
@@ -43,10 +43,8 @@ class PopupManager {
 
   private async loadState(): Promise<void> {
     try {
-      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
-        state: AppState;
-      };
-      this.state = response.state;
+      const response: unknown = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      this.state = (response as { state: AppState }).state;
       debug.log('Popup', 'State loaded:', this.state);
     } catch (error) {
       debug.error('Popup', 'Failed to load state:', error);
@@ -228,5 +226,3 @@ if (document.readyState === 'loading') {
   const popup = new PopupManager();
   popup.initialize().catch((err) => debug.error('Popup', err));
 }
-
-

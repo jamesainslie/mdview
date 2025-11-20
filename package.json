@@ -10,7 +10,8 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint src --ext ts,tsx",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "prepare": "husky"
   },
   "dependencies": {
     "dompurify": "^3.0.6",
@@ -36,6 +37,9 @@
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
     "eslint": "^8.55.0",
+    "husky": "^9.1.7",
+    "jsdom": "^27.2.0",
+    "lint-staged": "^16.2.7",
     "playwright": "^1.48.0",
     "prettier": "^3.1.0",
     "semantic-release": "^24.2.9",
@@ -57,5 +61,11 @@
     "themes"
   ],
   "author": "James Ainslie",
-  "license": "MIT"
+  "license": "MIT",
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
 }

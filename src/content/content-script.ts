@@ -13,7 +13,7 @@ import { debug } from '../utils/debug-logger';
 try {
   // Get the extension's base URL
   const extensionBaseUrl = chrome.runtime.getURL('/');
-  
+
   // Patch the URL constructor for Vite's module resolution
   const OriginalURL = window.URL;
   // @ts-expect-error - TS doesn't like extending URL with different signature
@@ -45,7 +45,7 @@ class MDViewContentScript {
     }
 
     const initStartTime = Date.now();
-    
+
     // Check if this is a markdown file (before logging, since we need state for debug mode)
     const isMarkdown = FileScanner.isMarkdownFile();
     if (!isMarkdown) {
@@ -69,10 +69,13 @@ class MDViewContentScript {
 
       // Read file content
       debug.debug('MDView', 'Reading file content...');
-      const content = await FileScanner.readFileContent();
+      const content = FileScanner.readFileContent();
       const fileSize = FileScanner.getFileSize(content);
       const initialHash = await FileScanner.generateHash(content);
-      debug.info('MDView', `File content loaded: ${FileScanner.formatFileSize(fileSize)} (${fileSize} bytes)`);
+      debug.info(
+        'MDView',
+        `File content loaded: ${FileScanner.formatFileSize(fileSize)} (${fileSize} bytes)`
+      );
 
       // Check file size
       if (!FileScanner.validateFileSize(content)) {
@@ -116,7 +119,7 @@ class MDViewContentScript {
       void loadingDiv.offsetHeight;
       debug.debug('MDView', 'Reflow forced, ensuring paint...');
       // Use requestAnimationFrame for faster, non-blocking paint guarantee
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       debug.debug('MDView', 'Loading indicator painted');
 
       // Create container
@@ -144,27 +147,29 @@ class MDViewContentScript {
       debug.debug('MDView', 'Setting up progress callback...');
       const cleanup = renderPipeline.onProgress((progress) => {
         const percentage = Math.round(progress.progress);
-        
+
         // Update subtle progress indicator
         const progressText = progressIndicator.querySelector('.progress-text');
-        const progressBarFill = progressIndicator.querySelector('.progress-bar-fill') as HTMLElement;
-        
+        const progressBarFill = progressIndicator.querySelector(
+          '.progress-bar-fill'
+        ) as HTMLElement;
+
         if (progressText) {
           progressText.textContent = `${percentage}%`;
         }
         if (progressBarFill) {
           progressBarFill.style.width = `${percentage}%`;
         }
-        
+
         debug.debug('MDView', `Progress: ${percentage}% - ${progress.message}`);
-        
+
         // Hide loading overlay as soon as skeleton is rendered (progress > 5%)
         // This lets users start reading immediately!
         if (progress.progress > 5 && loadingDiv.style.display !== 'none') {
           loadingDiv.style.display = 'none';
           debug.info('MDView', 'Loading overlay hidden - content visible');
         }
-        
+
         // Mark progress indicator as complete when done
         if (progress.progress >= 100) {
           progressIndicator.classList.add('complete');
@@ -185,11 +190,18 @@ class MDViewContentScript {
       const filePath = FileScanner.getFilePath();
       const theme = this.state?.preferences.theme || 'github-light';
       const preferences = this.state?.preferences || {};
-      
-      debug.info('MDView', `Starting render with theme: ${theme} and preferences:`, JSON.stringify(preferences));
-      debug.info('MDView', `Starting render - file size: ${fileSize} bytes, progressive: ${isProgressive}`);
+
+      debug.info(
+        'MDView',
+        `Starting render with theme: ${theme} and preferences:`,
+        JSON.stringify(preferences)
+      );
+      debug.info(
+        'MDView',
+        `Starting render - file size: ${fileSize} bytes, progressive: ${isProgressive}`
+      );
       debug.info('MDView', `Using cache and workers for file: ${filePath}`);
-      
+
       await renderPipeline.render({
         container,
         markdown: content,
@@ -200,7 +212,7 @@ class MDViewContentScript {
         useCache: true,
         useWorkers: true,
       });
-      
+
       const renderTime = Date.now() - loadingStartTime;
       debug.info('MDView', `Rendering completed in ${renderTime}ms`);
 
@@ -222,30 +234,29 @@ class MDViewContentScript {
       debug.info('MDView', `=== INITIALIZATION COMPLETED SUCCESSFULLY in ${totalTime}ms ===`);
     } catch (error) {
       debug.error('MDView', 'Initialization error:', error);
-      
+
       // Ensure loading overlay and progress indicator are removed even on error
       const loadingOverlay = document.getElementById('mdview-loading-overlay');
       if (loadingOverlay) {
         loadingOverlay.remove();
         debug.debug('MDView', 'Loading overlay removed after error');
       }
-      
+
       const progressIndicator = document.getElementById('mdview-progress-indicator');
       if (progressIndicator) {
         progressIndicator.remove();
         debug.debug('MDView', 'Progress indicator removed after error');
       }
-      
+
       this.showError('Failed to initialize MDView', error);
     }
   }
 
   private async loadState(): Promise<void> {
     try {
-      const response = (await chrome.runtime.sendMessage({ type: 'GET_STATE' })) as {
-        state: AppState;
-      };
-      this.state = response.state;
+      const response: unknown = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      const typedResponse = response as { state: AppState };
+      this.state = typedResponse.state;
       debug.debug('MDView', 'State loaded:', this.state);
       // Update debug mode based on loaded state
       if (this.state) {
@@ -307,55 +318,61 @@ class MDViewContentScript {
 
   private setupAutoReload(initialHash: string): void {
     debug.debug('MDView', 'Setting up auto-reload...');
-    
+
     // Prevent reload loops: don't allow reloads for first 2 seconds after page load
     const pageLoadTime = Date.now();
     const MIN_TIME_BEFORE_RELOAD = 2000; // 2 seconds
-    
+
     // Track reload attempts to prevent loops
     const RELOAD_LIMIT = 3;
     const reloadKey = 'mdview-reload-count';
     const reloadTimeKey = 'mdview-last-reload';
-    
+
     // Check if we're in a reload loop
     const lastReloadTime = parseInt(sessionStorage.getItem(reloadTimeKey) || '0');
     const reloadCount = parseInt(sessionStorage.getItem(reloadKey) || '0');
     const timeSinceLastReload = Date.now() - lastReloadTime;
-    
+
     // If we've reloaded too many times in quick succession, disable auto-reload
     if (reloadCount >= RELOAD_LIMIT && timeSinceLastReload < 5000) {
-      debug.warn('MDView', `⚠️ Auto-reload disabled: detected ${reloadCount} reloads in 5 seconds (reload loop protection)`);
+      debug.warn(
+        'MDView',
+        `⚠️ Auto-reload disabled: detected ${reloadCount} reloads in 5 seconds (reload loop protection)`
+      );
       sessionStorage.removeItem(reloadKey);
       sessionStorage.removeItem(reloadTimeKey);
       return;
     }
-    
+
     // Reset counter if it's been a while
     if (timeSinceLastReload > 10000) {
       sessionStorage.setItem(reloadKey, '0');
     }
-    
+
     // Use a debounced file watcher to prevent rapid reloads
     let reloadTimeout: number | null = null;
-    
+
     const debouncedReload = () => {
       // Don't reload too soon after page load
       const timeSincePageLoad = Date.now() - pageLoadTime;
       if (timeSincePageLoad < MIN_TIME_BEFORE_RELOAD) {
-        debug.debug('MDView', `Ignoring file change (page loaded ${timeSincePageLoad}ms ago, need ${MIN_TIME_BEFORE_RELOAD}ms)`);
+        debug.debug(
+          'MDView',
+          `Ignoring file change (page loaded ${timeSincePageLoad}ms ago, need ${MIN_TIME_BEFORE_RELOAD}ms)`
+        );
         return;
       }
-      
+
       if (reloadTimeout) {
         clearTimeout(reloadTimeout);
       }
-      
+
       reloadTimeout = window.setTimeout(() => {
         // Update reload tracking
         const currentCount = parseInt(sessionStorage.getItem(reloadKey) || '0');
         sessionStorage.setItem(reloadKey, (currentCount + 1).toString());
         sessionStorage.setItem(reloadTimeKey, Date.now().toString());
-        
+
         debug.info('MDView', 'File changed, reloading...');
         window.location.reload();
       }, 500); // 500ms debounce (increased from 300ms)
@@ -367,7 +384,7 @@ class MDViewContentScript {
       this.autoReloadCleanup = FileScanner.watchFile(initialHash, debouncedReload, 1000);
       debug.info('MDView', 'Auto-reload file watcher started');
     }, 1000); // Wait 1 second before starting to watch
-    
+
     debug.info('MDView', 'Auto-reload enabled (watcher will start in 1s)');
   }
 
@@ -380,10 +397,10 @@ class MDViewContentScript {
 
       const themeName = this.state.preferences.theme;
       debug.info('MDView', `Loading theme: ${themeName}`);
-      
+
       const { themeEngine } = await import('../core/theme-engine');
       await themeEngine.applyTheme(themeName);
-      
+
       debug.info('MDView', 'Theme applied successfully');
     } catch (error) {
       debug.error('MDView', 'Failed to apply initial theme:', error);
@@ -391,36 +408,38 @@ class MDViewContentScript {
   }
 
   private setupMessageListener(): void {
-    chrome.runtime.onMessage.addListener((message: { type: string; payload: any }, _sender, sendResponse) => {
-      debug.info('MDView', 'Content script received message:', message.type);
+    chrome.runtime.onMessage.addListener(
+      (message: { type: string; payload?: unknown }, _sender, sendResponse) => {
+        debug.info('MDView', 'Content script received message:', message.type);
 
-      switch (message.type) {
-        case 'APPLY_THEME':
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          this.handleApplyTheme(message.payload.theme as string)
-            .then(() => sendResponse({ success: true }))
-            .catch(error => sendResponse({ success: false, error: String(error) }));
-          return true; // Keep channel open for async response
-          break;
+        switch (message.type) {
+          case 'APPLY_THEME': {
+            const payload = message.payload as { theme: string };
+            this.handleApplyTheme(payload.theme)
+              .then(() => sendResponse({ success: true }))
+              .catch((error) => sendResponse({ success: false, error: String(error) }));
+            return true; // Keep channel open for async response
+          }
 
-        case 'PREFERENCES_UPDATED':
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          this.handlePreferencesUpdate(message.payload.preferences as Partial<AppState['preferences']>)
-            .then(() => sendResponse({ success: true }))
-            .catch(error => sendResponse({ success: false, error: String(error) }));
-          return true; // Keep channel open for async response
-          break;
+          case 'PREFERENCES_UPDATED': {
+            const payload = message.payload as { preferences: Partial<AppState['preferences']> };
+            this.handlePreferencesUpdate(payload.preferences)
+              .then(() => sendResponse({ success: true }))
+              .catch((error) => sendResponse({ success: false, error: String(error) }));
+            return true; // Keep channel open for async response
+          }
 
-        case 'RELOAD_CONTENT':
-          window.location.reload();
-          break;
+          case 'RELOAD_CONTENT':
+            window.location.reload();
+            break;
 
-        default:
-          debug.warn('MDView', 'Unknown message type:', message.type);
+          default:
+            debug.warn('MDView', 'Unknown message type:', message.type);
+        }
+
+        return true;
       }
-
-      return true;
-    });
+    );
   }
 
   /**
@@ -442,10 +461,12 @@ class MDViewContentScript {
   /**
    * Handle preferences update message
    */
-  private async handlePreferencesUpdate(preferences: Partial<AppState['preferences']>): Promise<void> {
+  private async handlePreferencesUpdate(
+    preferences: Partial<AppState['preferences']>
+  ): Promise<void> {
     try {
       debug.info('MDView', 'Handling preferences update:', preferences);
-      
+
       // Update debug mode if it changed
       if (preferences.logLevel !== undefined) {
         debug.setLogLevel(preferences.logLevel);
@@ -463,9 +484,16 @@ class MDViewContentScript {
 
       // Check for structural changes that require re-render
       let needsReload = false;
-      debug.info('MDView', `[ContentScript] Updating preferences. Old lineNumbers: ${this.state?.preferences.lineNumbers}, New lineNumbers: ${preferences.lineNumbers}`);
-      
-      if (preferences.lineNumbers !== undefined && this.state && preferences.lineNumbers !== this.state.preferences.lineNumbers) {
+      debug.info(
+        'MDView',
+        `[ContentScript] Updating preferences. Old lineNumbers: ${this.state?.preferences.lineNumbers}, New lineNumbers: ${preferences.lineNumbers}`
+      );
+
+      if (
+        preferences.lineNumbers !== undefined &&
+        this.state &&
+        preferences.lineNumbers !== this.state.preferences.lineNumbers
+      ) {
         debug.info('MDView', 'Line numbers preference changed, reloading page to re-render...');
         needsReload = true;
       }
@@ -476,9 +504,9 @@ class MDViewContentScript {
       }
 
       if (needsReload) {
-         debug.info('MDView', '[ContentScript] Triggering reload for structural change');
-         window.location.reload();
-         return;
+        debug.info('MDView', '[ContentScript] Triggering reload for structural change');
+        window.location.reload();
+        return;
       }
 
       debug.info('MDView', 'Preferences updated successfully');
@@ -551,4 +579,3 @@ if (document.readyState === 'loading') {
 }
 
 debug.info('MDView', 'Content script loaded');
-

@@ -66,7 +66,7 @@ export class CacheManager {
   /**
    * Get cached result by key
    */
-  async get(key: string): Promise<CachedResult | null> {
+  get(key: string): CachedResult | null {
     const entry = this.cache.get(key);
 
     if (!entry) {
@@ -92,13 +92,13 @@ export class CacheManager {
   /**
    * Set cached result
    */
-  async set(
+  set(
     key: string,
     result: CachedResult,
     filePath: string,
     contentHash: string,
     theme: ThemeName
-  ): Promise<void> {
+  ): void {
     // Evict old entries if cache is full
     if (this.cache.size >= this.maxSize) {
       this.evictOldest();
@@ -115,7 +115,10 @@ export class CacheManager {
     this.cache.set(key, entry);
     this.fileHashes.set(filePath, contentHash);
 
-    debug.info('CacheManager', `Cached result for key: ${key.substring(0, 8)}, size: ${this.cache.size}/${this.maxSize}`);
+    debug.info(
+      'CacheManager',
+      `Cached result for key: ${key.substring(0, 8)}, size: ${this.cache.size}/${this.maxSize}`
+    );
   }
 
   /**
@@ -225,9 +228,7 @@ export class CacheManager {
       debug.info('CacheManager', 'Evicted oldest entry:', oldestKey.substring(0, 8));
     }
   }
-
 }
 
 // Export singleton
 export const cacheManager = new CacheManager();
-

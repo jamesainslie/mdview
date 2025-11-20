@@ -40,7 +40,10 @@ export class ScrollManager {
 
       try {
         sessionStorage.setItem(ScrollManager.STORAGE_KEY, JSON.stringify(state));
-        debug.debug('ScrollManager', `Saved scroll position: ${state.position}px, section: ${visibleSectionId || 'none'}`);
+        debug.debug(
+          'ScrollManager',
+          `Saved scroll position: ${state.position}px, section: ${visibleSectionId || 'none'}`
+        );
       } catch (error) {
         debug.error('ScrollManager', 'Failed to save scroll position:', error);
       }
@@ -55,7 +58,7 @@ export class ScrollManager {
       const stored = sessionStorage.getItem(ScrollManager.STORAGE_KEY);
       if (!stored) return null;
 
-      const state: ScrollState = JSON.parse(stored);
+      const state = JSON.parse(stored) as ScrollState;
 
       // Only restore if it's for the same file and recent
       const age = Date.now() - state.timestamp;
@@ -65,7 +68,10 @@ export class ScrollManager {
         return null;
       }
 
-      debug.info('ScrollManager', `Found saved scroll position: ${state.position}px, section: ${state.visibleSectionId || 'none'}`);
+      debug.info(
+        'ScrollManager',
+        `Found saved scroll position: ${state.position}px, section: ${state.visibleSectionId || 'none'}`
+      );
       return state;
     } catch (error) {
       debug.error('ScrollManager', 'Failed to get scroll position:', error);
@@ -85,7 +91,7 @@ export class ScrollManager {
       if (section) {
         section.scrollIntoView({ behavior: 'auto' });
         debug.debug('ScrollManager', `Scrolled to section: ${state.visibleSectionId}`);
-        
+
         // Clear the saved position immediately after restoring
         // This prevents re-restoration on subsequent operations
         this.clearSavedPosition();
@@ -95,7 +101,7 @@ export class ScrollManager {
 
     // Fallback to pixel position
     window.scrollTo(0, state.position);
-    
+
     // Clear the saved position immediately after restoring
     this.clearSavedPosition();
   }
@@ -170,4 +176,3 @@ export class ScrollManager {
     };
   }
 }
-

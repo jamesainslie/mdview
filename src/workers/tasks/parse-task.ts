@@ -21,7 +21,7 @@ import type {
 /**
  * Handle markdown parsing task
  */
-export async function handleParseTask(payload: unknown): Promise<ParseTaskResult> {
+export function handleParseTask(payload: unknown): ParseTaskResult {
   const { markdown, options } = payload as ParseTaskPayload;
 
   // Metadata collection
@@ -67,12 +67,15 @@ export async function handleParseTask(payload: unknown): Promise<ParseTaskResult
     labelAfter: true,
   });
 
-  md.use((emojiPlugin as any).full || emojiPlugin);
+  const emojiPluginToUse = (emojiPlugin as { full?: typeof emojiPlugin }).full || emojiPlugin;
+  md.use(emojiPluginToUse);
 
   // Add custom fence renderer for code blocks and mermaid
-  const defaultFenceRenderer = md.renderer.rules.fence || function (tokens, idx, opts, _env, self) {
-    return self.renderToken(tokens, idx, opts);
-  };
+  const defaultFenceRenderer =
+    md.renderer.rules.fence ||
+    function (tokens, idx, opts, _env, self) {
+      return self.renderToken(tokens, idx, opts);
+    };
 
   md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
     const token = tokens[idx];
@@ -109,9 +112,11 @@ export async function handleParseTask(payload: unknown): Promise<ParseTaskResult
   };
 
   // Add heading renderer for metadata
-  const defaultHeadingOpenRenderer = md.renderer.rules.heading_open || function (tokens, idx, opts, _env, self) {
-    return self.renderToken(tokens, idx, opts);
-  };
+  const defaultHeadingOpenRenderer =
+    md.renderer.rules.heading_open ||
+    function (tokens, idx, opts, _env, self) {
+      return self.renderToken(tokens, idx, opts);
+    };
 
   md.renderer.rules.heading_open = (tokens, idx, opts, env, self) => {
     const token = tokens[idx];
@@ -136,17 +141,20 @@ export async function handleParseTask(payload: unknown): Promise<ParseTaskResult
   };
 
   // Add image renderer for metadata
-  const defaultImageRenderer = md.renderer.rules.image || function (tokens, idx, opts, _env, self) {
-    return self.renderToken(tokens, idx, opts);
-  };
+  const defaultImageRenderer =
+    md.renderer.rules.image ||
+    function (tokens, idx, opts, _env, self) {
+      return self.renderToken(tokens, idx, opts);
+    };
 
   md.renderer.rules.image = (tokens, idx, opts, env, self) => {
     const token = tokens[idx];
     const srcIndex = token.attrIndex('src');
-    const src = srcIndex >= 0 ? token.attrs![srcIndex][1] : '';
+    const attrs = token.attrs || [];
+    const src = srcIndex >= 0 ? attrs[srcIndex][1] : '';
     const alt = token.content;
     const titleIndex = token.attrIndex('title');
-    const title = titleIndex >= 0 ? token.attrs![titleIndex][1] : undefined;
+    const title = titleIndex >= 0 ? attrs[titleIndex][1] : undefined;
 
     metadata.images.push({
       src,
@@ -159,14 +167,17 @@ export async function handleParseTask(payload: unknown): Promise<ParseTaskResult
   };
 
   // Add link renderer for metadata
-  const defaultLinkOpenRenderer = md.renderer.rules.link_open || function (tokens, idx, opts, _env, self) {
-    return self.renderToken(tokens, idx, opts);
-  };
+  const defaultLinkOpenRenderer =
+    md.renderer.rules.link_open ||
+    function (tokens, idx, opts, _env, self) {
+      return self.renderToken(tokens, idx, opts);
+    };
 
   md.renderer.rules.link_open = (tokens, idx, opts, env, self) => {
     const token = tokens[idx];
     const hrefIndex = token.attrIndex('href');
-    const href = hrefIndex >= 0 ? token.attrs![hrefIndex][1] : '';
+    const attrs = token.attrs || [];
+    const href = hrefIndex >= 0 ? attrs[hrefIndex][1] : '';
     const nextToken = tokens[idx + 1];
     const text = nextToken && nextToken.type === 'inline' ? nextToken.content : '';
 
@@ -204,5 +215,3 @@ function escapeHtml(text: string): string {
   };
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
-
-

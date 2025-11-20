@@ -58,7 +58,7 @@ export class MermaidRenderer {
       },
     });
 
-    debug.info('MermaidRenderer',' Initialized');
+    debug.info('MermaidRenderer', ' Initialized');
   }
 
   /**
@@ -91,7 +91,7 @@ export class MermaidRenderer {
    */
   updateTheme(config: MermaidThemeConfig): void {
     debug.info('MermaidRenderer', `Updating theme to ${config.theme}`);
-    
+
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
@@ -121,15 +121,18 @@ export class MermaidRenderer {
    */
   private async rerenderAll(): Promise<void> {
     const diagrams = document.querySelectorAll('.mermaid-container');
-    
+
     for (const container of Array.from(diagrams)) {
       const element = container as HTMLElement;
       const id = element.id;
-      
+
       if (!id) continue;
 
       // Check if it was previously rendered or had an error
-      if (element.classList.contains('mermaid-ready') || element.classList.contains('mermaid-error')) {
+      if (
+        element.classList.contains('mermaid-ready') ||
+        element.classList.contains('mermaid-error')
+      ) {
         // Clean up Panzoom
         const panzoom = this.panzoomInstances.get(id);
         if (panzoom) {
@@ -138,8 +141,9 @@ export class MermaidRenderer {
         }
 
         // Clean up keyboard listeners
-        if ((element as any).__keyboardCleanup) {
-          (element as any).__keyboardCleanup();
+        const elementWithCleanup = element as { __keyboardCleanup?: () => void };
+        if (elementWithCleanup.__keyboardCleanup) {
+          elementWithCleanup.__keyboardCleanup();
         }
 
         // Reset state
@@ -178,7 +182,7 @@ export class MermaidRenderer {
   async renderDiagram(containerId: string): Promise<void> {
     const container = document.getElementById(containerId);
     if (!container) {
-      debug.error("MermaidRenderer", `Container not found: ${containerId}`);
+      debug.error('MermaidRenderer', `Container not found: ${containerId}`);
       return;
     }
 
@@ -188,25 +192,29 @@ export class MermaidRenderer {
     }
 
     // Get mermaid code from global registry or data attribute (fallback for lazy sections)
-    const registry = (window as any).__MDVIEW_MERMAID_CODE__ as Map<string, string>;
+    const windowWithRegistry = window as { __MDVIEW_MERMAID_CODE__?: Map<string, string> };
+    const registry = windowWithRegistry.__MDVIEW_MERMAID_CODE__;
     let code = registry?.get(containerId)?.trim();
-    
+
     // Fallback: Check if code was stored in data attribute (from previous render)
     if (!code) {
       code = container.getAttribute('data-mermaid-code') || '';
     }
-    
+
     if (!code) {
-      debug.error('MermaidRenderer', `No code found in registry or data attribute for ${containerId}`);
+      debug.error(
+        'MermaidRenderer',
+        `No code found in registry or data attribute for ${containerId}`
+      );
       this.showError(container, 'No Mermaid code found');
       return;
     }
-    
+
     debug.debug('MermaidRenderer', `Container ${containerId}: code exists, length: ${code.length}`);
 
     // Store code in the container as data attribute for potential re-renders
     container.setAttribute('data-mermaid-code', code);
-    
+
     // Remove from registry now that we've stored it in DOM
     // (Keep it in registry too in case of re-renders before DOM update)
     // registry.delete(containerId); // Don't delete - keep for lazy sections
@@ -268,9 +276,9 @@ export class MermaidRenderer {
         this.observer.unobserve(container);
       }
 
-      debug.info("MermaidRenderer", ` Rendered diagram: ${containerId}`);
+      debug.info('MermaidRenderer', ` Rendered diagram: ${containerId}`);
     } catch (error) {
-      debug.error("MermaidRenderer", `[MermaidRenderer] Error rendering ${containerId}:`, error);
+      debug.error('MermaidRenderer', `[MermaidRenderer] Error rendering ${containerId}:`, error);
       this.showError(container, error instanceof Error ? error.message : String(error));
     } finally {
       this.isRendering = false;
@@ -317,7 +325,7 @@ export class MermaidRenderer {
    */
   private initializePanzoom(container: HTMLElement, svg: SVGElement): void {
     debug.debug('MermaidRenderer', `initializePanzoom() called for container: ${container.id}`);
-    
+
     const panzoomInstance = Panzoom(svg, {
       maxZoom: 10,
       minZoom: 0.1,
@@ -327,17 +335,23 @@ export class MermaidRenderer {
     });
 
     debug.debug('MermaidRenderer', `  Panzoom instance created, storing with ID: ${container.id}`);
-    
+
     // Store instance
     this.panzoomInstances.set(container.id, panzoomInstance);
-    
+
     const initialTransform = panzoomInstance.getTransform();
-    debug.debug('MermaidRenderer', `  Initial transform: scale=${initialTransform.scale.toFixed(2)}, pos=(${initialTransform.x.toFixed(1)}, ${initialTransform.y.toFixed(1)})`);
+    debug.debug(
+      'MermaidRenderer',
+      `  Initial transform: scale=${initialTransform.scale.toFixed(2)}, pos=(${initialTransform.x.toFixed(1)}, ${initialTransform.y.toFixed(1)})`
+    );
 
     // Listen for transform changes to debug unexpected resets
     svg.addEventListener('panzoomchange', (() => {
       const transform = panzoomInstance.getTransform();
-      debug.debug('MermaidRenderer', `  Transform changed for ${container.id}: scale=${transform.scale.toFixed(2)}, pos=(${transform.x.toFixed(1)}, ${transform.y.toFixed(1)})`);
+      debug.debug(
+        'MermaidRenderer',
+        `  Transform changed for ${container.id}: scale=${transform.scale.toFixed(2)}, pos=(${transform.x.toFixed(1)}, ${transform.y.toFixed(1)})`
+      );
     }) as EventListener);
 
     // Add mouse wheel zoom
@@ -358,7 +372,11 @@ export class MermaidRenderer {
   /**
    * Setup keyboard controls for diagram
    */
-  private setupKeyboardControls(container: HTMLElement, panzoom: PanZoom, maximizeCallback?: () => void): void {
+  private setupKeyboardControls(
+    container: HTMLElement,
+    panzoom: PanZoom,
+    maximizeCallback?: () => void
+  ): void {
     const handler = (e: KeyboardEvent) => {
       // Only handle if container is focused or hovered
       if (!container.matches(':hover, :focus-within')) {
@@ -401,7 +419,7 @@ export class MermaidRenderer {
           break;
         case 'e':
           e.preventDefault();
-          this.exportSVG(container.id);
+          void this.exportSVG(container.id);
           break;
         case 'ArrowUp':
           if (e.shiftKey) {
@@ -433,7 +451,8 @@ export class MermaidRenderer {
     document.addEventListener('keydown', handler);
 
     // Store cleanup function
-    (container as any).__keyboardCleanup = () => {
+    const containerWithCleanup = container as { __keyboardCleanup?: () => void };
+    containerWithCleanup.__keyboardCleanup = () => {
       document.removeEventListener('keydown', handler);
     };
   }
@@ -476,7 +495,7 @@ export class MermaidRenderer {
     if (!controls) return;
 
     const buttons = controls.querySelectorAll('.mermaid-control-button');
-    
+
     // Define actions for each button (same order as addControls)
     const actions = [
       () => this.zoomIn(container.id),
@@ -491,7 +510,7 @@ export class MermaidRenderer {
       // Remove old listeners by cloning the button (clean slate)
       const newButton = button.cloneNode(true) as HTMLElement;
       button.parentNode?.replaceChild(newButton, button);
-      
+
       // Attach new listener
       if (actions[index]) {
         newButton.addEventListener('click', actions[index]);
@@ -537,7 +556,7 @@ export class MermaidRenderer {
   resetZoom(containerId: string): void {
     const container = document.getElementById(containerId);
     const panzoom = this.panzoomInstances.get(containerId);
-    
+
     if (!container || !panzoom) return;
 
     const svg = container.querySelector('svg');
@@ -547,7 +566,7 @@ export class MermaidRenderer {
     // The browser's SVG viewBox + width=100% handles the fitting naturally
     panzoom.zoomAbs(0, 0, 1);
     panzoom.moveTo(0, 0);
-    
+
     debug.debug('MermaidRenderer', `Reset zoom for ${containerId}`);
   }
 
@@ -566,7 +585,7 @@ export class MermaidRenderer {
    */
   maximize(containerId: string): void {
     debug.debug('MermaidRenderer', `maximize() called for: ${containerId}`);
-    
+
     const container = document.getElementById(containerId);
     if (!container) {
       debug.error('MermaidRenderer', `Container not found: ${containerId}`);
@@ -574,7 +593,7 @@ export class MermaidRenderer {
     }
 
     debug.debug('MermaidRenderer', `  Creating maximize overlay...`);
-    
+
     // Create overlay
     const overlay = document.createElement('div');
     overlay.className = 'mermaid-maximize-overlay';
@@ -582,14 +601,14 @@ export class MermaidRenderer {
 
     // Clone diagram
     const clone = container.cloneNode(true) as HTMLElement;
-    
+
     // Give clone a unique ID for panzoom tracking
     const maximizedId = `${containerId}-maximized`;
     clone.id = maximizedId;
     clone.classList.add('maximized');
-    
+
     debug.debug('MermaidRenderer', `  Cloned diagram with ID: ${maximizedId}`);
-    
+
     // Make the clone expand to fill available space
     clone.style.width = '90vw';
     clone.style.height = '90vh';
@@ -610,12 +629,13 @@ export class MermaidRenderer {
         clonePanzoom.dispose();
         this.panzoomInstances.delete(maximizedId);
       }
-      
+
       // Clean up keyboard handlers
-      if ((clone as any).__keyboardCleanup) {
-        (clone as any).__keyboardCleanup();
+      const cloneWithCleanup = clone as { __keyboardCleanup?: () => void };
+      if (cloneWithCleanup.__keyboardCleanup) {
+        cloneWithCleanup.__keyboardCleanup();
       }
-      
+
       // Remove overlay from DOM
       if (document.body.contains(overlay)) {
         document.body.removeChild(overlay);
@@ -638,28 +658,28 @@ export class MermaidRenderer {
     const svg = clone.querySelector('svg');
     if (svg) {
       debug.debug('MermaidRenderer', `  Found SVG, initializing panzoom...`);
-      
+
       const svgElement = svg as SVGElement;
       // Make SVG scale to fit
       svgElement.style.width = '100%';
       svgElement.style.height = '100%';
       svgElement.style.maxWidth = '100%';
       svgElement.style.maxHeight = '100%';
-      
+
       this.initializePanzoom(clone, svgElement);
       debug.debug('MermaidRenderer', `  Panzoom initialized for ${maximizedId}`);
-      
+
       // Re-setup keyboard controls for the cloned instance
       const clonePanzoom = this.panzoomInstances.get(maximizedId);
       if (clonePanzoom) {
         this.setupKeyboardControls(clone, clonePanzoom, cleanup);
-        
+
         // Center logic: Identity transform + moveTo(0,0)
-        // Since SVG is 100% width/height and preserves aspect ratio, 
+        // Since SVG is 100% width/height and preserves aspect ratio,
         // this will center the content in the 90vw/90vh container
         clonePanzoom.zoomAbs(0, 0, 1);
         clonePanzoom.moveTo(0, 0);
-        
+
         debug.debug('MermaidRenderer', `  Maximized view centered`);
       }
     } else {
@@ -690,20 +710,20 @@ export class MermaidRenderer {
   /**
    * Export diagram as SVG
    */
-  async exportSVG(containerId: string): Promise<void> {
+  exportSVG(containerId: string): void {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     const svg = container.querySelector('svg');
     if (!svg) {
-      debug.error('MermaidRenderer',' No SVG found for export');
+      debug.error('MermaidRenderer', ' No SVG found for export');
       return;
     }
 
     try {
       // Clone and clean SVG
       const clone = svg.cloneNode(true) as SVGElement;
-      
+
       // Remove Panzoom transformations
       clone.removeAttribute('style');
       clone.querySelectorAll('[style]').forEach((el) => {
@@ -728,12 +748,12 @@ export class MermaidRenderer {
 
       URL.revokeObjectURL(url);
 
-      debug.info("MermaidRenderer", ` Exported SVG: ${containerId}`);
+      debug.info('MermaidRenderer', ` Exported SVG: ${containerId}`);
 
       // Show success notification
       this.showNotification(container, 'SVG exported successfully');
     } catch (error) {
-      debug.error('MermaidRenderer',' Export error:', error);
+      debug.error('MermaidRenderer', ' Export error:', error);
       this.showNotification(container, 'Export failed', true);
     }
   }
@@ -760,13 +780,15 @@ export class MermaidRenderer {
     // Add copy error button handler
     const copyButton = container.querySelector('.mermaid-copy-error');
     if (copyButton) {
-      copyButton.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(`${message}\n\n${code}`);
-          (copyButton as HTMLElement).textContent = '✓ Copied';
-        } catch (error) {
-          debug.error("MermaidRenderer", 'Failed to copy error:', error);
-        }
+      copyButton.addEventListener('click', () => {
+        void (async () => {
+          try {
+            await navigator.clipboard.writeText(`${message}\n\n${code}`);
+            (copyButton as HTMLElement).textContent = '✓ Copied';
+          } catch (error) {
+            debug.error('MermaidRenderer', 'Failed to copy error:', error);
+          }
+        })();
       });
     }
 
@@ -819,7 +841,7 @@ export class MermaidRenderer {
       this.observer = null;
     }
 
-    debug.info('MermaidRenderer',' Cleaned up');
+    debug.info('MermaidRenderer', ' Cleaned up');
   }
 }
 
