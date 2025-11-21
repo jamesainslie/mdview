@@ -47,16 +47,19 @@ export class WorkerPool {
 
     // Check if we're on a file:// URL - workers don't work there
     if (window.location.protocol === 'file:') {
-      debug.warn('WorkerPool', 'Skipping workers on file:// URLs (Chrome restriction) - using optimized sync rendering');
+      debug.info(
+        'WorkerPool',
+        'Workers unavailable on file:// URLs (Chrome restriction), using synchronous rendering'
+      );
       throw new Error('Workers not available on file:// URLs');
     }
 
     try {
       // Import worker module (works on http:// and https:// URLs)
       const RenderWorker = await import('./render-worker?worker');
-      
+
       debug.debug('WorkerPool', `Creating pool with ${this.poolSize} workers`);
-      
+
       for (let i = 0; i < this.poolSize; i++) {
         const worker = new RenderWorker.default();
 
@@ -197,7 +200,10 @@ export class WorkerPool {
     // Send task to worker
     worker.postMessage(pendingTask.task);
 
-    debug.debug('WorkerPool', `Dispatched task ${pendingTask.task.id} (type: ${pendingTask.task.type})`);
+    debug.debug(
+      'WorkerPool',
+      `Dispatched task ${pendingTask.task.id} (type: ${pendingTask.task.type})`
+    );
   }
 
   /**
@@ -214,7 +220,10 @@ export class WorkerPool {
     }
 
     this.taskQueue.splice(insertIndex, 0, pendingTask);
-    debug.debug('WorkerPool', `Queued task ${pendingTask.task.id}, queue size: ${this.taskQueue.length}`);
+    debug.debug(
+      'WorkerPool',
+      `Queued task ${pendingTask.task.id}, queue size: ${this.taskQueue.length}`
+    );
   }
 
   /**
@@ -288,4 +297,3 @@ export class WorkerPool {
 
 // Export singleton
 export const workerPool = new WorkerPool();
-
