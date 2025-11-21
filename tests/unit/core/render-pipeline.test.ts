@@ -428,7 +428,9 @@ describe('RenderPipeline', () => {
     test('should display error in container on failure', async () => {
       // Mock converter to throw error
       vi.spyOn(pipeline as any, 'converter', 'get').mockReturnValue({
-        convert: vi.fn().mockRejectedValue(new Error('Parse error')),
+        convert: vi.fn().mockImplementation(() => {
+          throw new Error('Parse error');
+        }),
       });
 
       try {
