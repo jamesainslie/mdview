@@ -2,8 +2,12 @@ import { defineConfig } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import { resolve } from 'path';
 import manifest from './public/manifest.json';
+import packageJson from './package.json';
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+  },
   plugins: [crx({ manifest })],
   base: './',
   resolve: {

@@ -3,7 +3,7 @@
  * Manages popup UI and interactions
  */
 
-import type { AppState, ThemeName } from '../types';
+import type { AppState, ThemeName, LogLevel } from '../types';
 import { debug } from '../utils/debug-logger';
 
 class PopupManager {
@@ -24,7 +24,23 @@ class PopupManager {
     // Setup storage listener
     this.setupStorageListener();
 
+    // Set version
+    this.setAppVersion();
+
     debug.log('Popup', 'Initialized');
+  }
+
+  private setAppVersion(): void {
+    const versionElement = document.getElementById('app-version');
+    if (versionElement) {
+      // __APP_VERSION__ is injected by Vite at build time
+      try {
+        versionElement.textContent = `Version ${__APP_VERSION__}`;
+      } catch (e) {
+        // Fallback if define replacement fails (e.g. in some dev environments)
+        debug.warn('Popup', 'Failed to set app version:', e);
+      }
+    }
   }
 
   private setupStorageListener(): void {
@@ -86,6 +102,12 @@ class PopupManager {
     const syncTabs = document.getElementById('sync-tabs') as HTMLInputElement;
     if (syncTabs) {
       syncTabs.checked = preferences.syncTabs;
+    }
+
+    // Update log level select
+    const logLevelSelect = document.getElementById('log-level-select') as HTMLSelectElement;
+    if (logLevelSelect) {
+      logLevelSelect.value = preferences.logLevel || 'error';
     }
   }
 
@@ -153,6 +175,15 @@ class PopupManager {
       syncTabs.addEventListener('change', (e) => {
         const target = e.target as HTMLInputElement;
         void this.handlePreferenceChange({ syncTabs: target.checked });
+      });
+    }
+
+    // Log level select
+    const logLevelSelect = document.getElementById('log-level-select');
+    if (logLevelSelect) {
+      logLevelSelect.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        void this.handlePreferenceChange({ logLevel: target.value as LogLevel });
       });
     }
 
