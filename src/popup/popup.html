@@ -14,31 +14,34 @@
       </header>
 
       <main class="popup-main">
-        <!-- Theme Selection -->
+        <!-- Dropdowns Grid -->
         <section class="setting-section">
-          <label for="theme-select" class="setting-label">Theme</label>
-          <select id="theme-select" class="theme-select">
-            <option value="github-light">GitHub Light</option>
-            <option value="github-dark">GitHub Dark</option>
-            <option value="catppuccin-latte">Catppuccin Latte</option>
-            <option value="catppuccin-frappe">Catppuccin Frappé</option>
-            <option value="catppuccin-macchiato">Catppuccin Macchiato</option>
-            <option value="catppuccin-mocha">Catppuccin Mocha</option>
-            <option value="monokai">Monokai</option>
-            <option value="monokai-pro">Monokai Pro</option>
-          </select>
-        </section>
+          <div class="dropdowns-grid">
+            <div class="dropdown-item">
+              <label for="theme-select" class="setting-label">Theme</label>
+              <select id="theme-select" class="theme-select">
+                <option value="github-light">GitHub Light</option>
+                <option value="github-dark">GitHub Dark</option>
+                <option value="catppuccin-latte">Catppuccin Latte</option>
+                <option value="catppuccin-frappe">Catppuccin Frappé</option>
+                <option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+                <option value="catppuccin-mocha">Catppuccin Mocha</option>
+                <option value="monokai">Monokai</option>
+                <option value="monokai-pro">Monokai Pro</option>
+              </select>
+            </div>
 
-        <!-- Log Level Selection -->
-        <section class="setting-section">
-          <label for="log-level-select" class="setting-label">Log Level</label>
-          <select id="log-level-select" class="theme-select">
-            <option value="none">None</option>
-            <option value="error">Error</option>
-            <option value="warn">Warning</option>
-            <option value="info">Info</option>
-            <option value="debug">Debug</option>
-          </select>
+            <div class="dropdown-item">
+              <label for="log-level-select" class="setting-label">Log Level</label>
+              <select id="log-level-select" class="theme-select">
+                <option value="none">None</option>
+                <option value="error">Error</option>
+                <option value="warn">Warning</option>
+                <option value="info">Info</option>
+                <option value="debug">Debug</option>
+              </select>
+            </div>
+          </div>
         </section>
 
         <!-- Quick Toggles -->
@@ -103,6 +106,7 @@
 
       <footer class="popup-footer">
         <p class="version" id="app-version">Version 1.0.0</p>
+        <p class="made-with-love">Made with ❤️ by James Ainslie</p>
       </footer>
     </div>
 
