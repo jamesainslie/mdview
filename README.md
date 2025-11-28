@@ -65,6 +65,8 @@
 3. Build the extension:
    ```bash
    npm run build
+   # or using Makefile
+   make build
    ```
 
 4. Load in Chrome:
@@ -126,6 +128,10 @@ See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for additional help.
 
 ## Development
 
+### Build System
+
+MDView includes both NPM scripts and a Makefile for building and development tasks. The Makefile provides a convenient, standardized interface for common operations with helpful shortcuts and clean output.
+
 ### Project Structure
 ```
 mdview/
@@ -146,6 +152,8 @@ mdview/
 ```
 
 ### Development Commands
+
+#### Using NPM
 ```bash
 # Development mode (auto-reload)
 npm run dev
@@ -164,6 +172,48 @@ npm run lint
 
 # Format code
 npm run format
+```
+
+#### Using Makefile
+```bash
+# Show all available targets
+make help
+
+# Build for production
+make build
+
+# Development mode (auto-reload)
+make dev
+
+# Run unit tests (watch mode)
+make test
+
+# Run tests once (CI mode)
+make test-ci
+
+# Lint code
+make lint
+
+# Format code
+make format
+
+# Install dependencies
+make install
+
+# Generate icons from SVG
+make icons
+
+# Create distribution zip
+make dist-zip
+
+# Clean build artifacts
+make clean
+
+# Rebuild from scratch
+make rebuild
+
+# Run all checks (lint + test)
+make check
 ```
 
 ### Tech Stack
