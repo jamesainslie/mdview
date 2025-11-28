@@ -1,0 +1,21 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0969da;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8250df;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Magnifying glass circle -->
+  <circle cx="55" cy="55" r="35" fill="none" stroke="url(#grad5)" stroke-width="6"/>
+  
+  <!-- Markdown # symbol inside lens -->
+  <text x="40" y="70" font-family="monospace" font-size="32" font-weight="bold" fill="url(#grad5)">#</text>
+  
+  <!-- Handle of magnifying glass -->
+  <line x1="80" y1="80" x2="100" y2="100" stroke="url(#grad5)" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Subtle shine/reflection on glass -->
+  <path d="M 45 35 Q 50 30 55 35" stroke="white" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
+</svg>
+
