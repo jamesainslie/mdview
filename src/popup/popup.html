@@ -29,6 +29,18 @@
           </select>
         </section>
 
+        <!-- Log Level Selection -->
+        <section class="setting-section">
+          <label for="log-level-select" class="setting-label">Log Level</label>
+          <select id="log-level-select" class="theme-select">
+            <option value="none">None</option>
+            <option value="error">Error</option>
+            <option value="warn">Warning</option>
+            <option value="info">Info</option>
+            <option value="debug">Debug</option>
+          </select>
+        </section>
+
         <!-- Quick Toggles -->
         <section class="setting-section">
           <div class="toggle-group">
@@ -78,7 +90,7 @@
       </main>
 
       <footer class="popup-footer">
-        <p class="version">Version 1.0.0</p>
+        <p class="version" id="app-version">Version 1.0.0</p>
       </footer>
     </div>
 

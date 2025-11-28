@@ -31,7 +31,22 @@ class OptionsManager {
     // Setup storage listener
     this.setupStorageListener();
 
+    // Set version
+    this.setAppVersion();
+
     debug.log('Options', 'Initialized');
+  }
+
+  private setAppVersion(): void {
+    const versionElement = document.getElementById('app-version');
+    if (versionElement) {
+      // __APP_VERSION__ is injected by Vite at build time
+      try {
+        versionElement.textContent = `MDView v${__APP_VERSION__}`;
+      } catch (e) {
+        debug.warn('Options', 'Failed to set app version:', e);
+      }
+    }
   }
 
   private setupStorageListener(): void {

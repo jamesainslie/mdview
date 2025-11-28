@@ -4,6 +4,8 @@
  * Global window extensions
  */
 declare global {
+  const __APP_VERSION__: string;
+
   interface Window {
     __MDVIEW_MERMAID_CODE__?: Map<string, string>;
   }
@@ -281,4 +283,3 @@ export interface MermaidTaskResult {
   svg: string;
   id: string;
 }
-

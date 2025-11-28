@@ -64,16 +64,14 @@ export class RenderPipeline {
       this.workersEnabled = true;
       debug.info('RenderPipeline', '✅ Worker pool initialized');
     } catch (error) {
-      // Workers unavailable (file:// URLs) - use optimized sync rendering
-      if (window.location.protocol === 'file:') {
-        debug.warn(
-          'RenderPipeline',
-          'Using optimized synchronous rendering (workers unavailable on file:// URLs)'
-        );
-      } else {
+      // Workers unavailable - WorkerPool already logged the reason
+      // Silently fall back to synchronous rendering
+      this.workersEnabled = false;
+
+      // Only log errors for unexpected failures (non-file:// protocols)
+      if (window.location.protocol !== 'file:') {
         debug.error('RenderPipeline', 'Worker initialization failed, using sync fallback:', error);
       }
-      this.workersEnabled = false;
     }
   }
 

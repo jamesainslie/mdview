@@ -140,6 +140,48 @@ export class FileScanner {
             debug.log('FileScanner', 'No change detected');
           }
         } catch (error) {
+          // Debug: Log error details for troubleshooting
+          debug.debug('FileScanner', '=== Error Analysis ===');
+          debug.debug('FileScanner', 'Error type:', typeof error);
+          debug.debug('FileScanner', 'Error instanceof Error:', error instanceof Error);
+          debug.debug('FileScanner', 'Error toString():', String(error));
+          debug.debug(
+            'FileScanner',
+            'Error message:',
+            error instanceof Error ? error.message : 'N/A'
+          );
+          debug.debug('FileScanner', 'Error name:', error instanceof Error ? error.name : 'N/A');
+
+          // Improved error handling with case-insensitive check
+          const errorStr = String(error).toLowerCase();
+          const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
+
+          debug.debug('FileScanner', 'errorStr (lowercase):', errorStr);
+          debug.debug('FileScanner', 'errorMessage (lowercase):', errorMessage);
+
+          const check1 = errorStr.includes('context invalidated');
+          const check2 = errorStr.includes('extension context');
+          const check3 = errorMessage.includes('context invalidated');
+
+          debug.debug('FileScanner', 'Check results:');
+          debug.debug('FileScanner', '  - errorStr.includes("context invalidated"):', check1);
+          debug.debug('FileScanner', '  - errorStr.includes("extension context"):', check2);
+          debug.debug('FileScanner', '  - errorMessage.includes("context invalidated"):', check3);
+
+          const isContextInvalid = check1 || check2 || check3;
+          debug.debug('FileScanner', 'isContextInvalid:', isContextInvalid);
+          debug.debug('FileScanner', '=== End Error Analysis ===');
+
+          // Handle extension context invalidation (e.g. after extension update/reload)
+          if (isContextInvalid) {
+            debug.warn('FileScanner', 'Extension context invalidated. Stopping file watcher.');
+            if (intervalId !== null) {
+              clearInterval(intervalId);
+              intervalId = null;
+            }
+            return;
+          }
+
           debug.error('FileScanner', 'Error communicating with background:', error);
         }
       })();
