@@ -8,6 +8,7 @@
     "build": "tsc && vite build && node scripts/fix-manifest.js",
     "preview": "vite preview",
     "test": "vitest",
+    "test:ci": "vitest --run",
     "test:e2e": "playwright test",
     "lint": "eslint src --ext ts,tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
@@ -59,7 +60,7 @@
   "author": "James Ainslie",
   "license": "MIT",
   "lint-staged": {
-    "src/**/*.{ts,tsx}": [
+    "{src,tests}/**/*.{ts,tsx}": [
       "eslint --fix",
       "prettier --write"
     ]
