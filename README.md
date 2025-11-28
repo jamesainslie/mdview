@@ -1,6 +1,26 @@
-# MDView - Markdown Viewer
+<h1 align="center" class="mdview-hero-title">MDView - Markdown Viewer</h1>
 
-A modern Chrome extension for viewing Markdown files with beautiful themes, syntax highlighting, and interactive Mermaid diagrams.
+<p align="center" class="mdview-badges">
+  <a href="https://github.com/jamesainslie/mdview/actions/workflows/ci.yml">
+    <img src="https://github.com/jamesainslie/mdview/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  </a>
+  <a href="https://github.com/jamesainslie/mdview/actions/workflows/release-please.yml">
+    <img src="https://github.com/jamesainslie/mdview/actions/workflows/release-please.yml/badge.svg" alt="Release Please" />
+  </a>
+  <a href="https://github.com/jamesainslie/mdview/actions/workflows/release-extension.yml">
+    <img src="https://github.com/jamesainslie/mdview/actions/workflows/release-extension.yml/badge.svg" alt="Release Extension" />
+  </a>
+  <img src="https://img.shields.io/github/package-json/v/jamesainslie/mdview" alt="Version" />
+  <img src="https://img.shields.io/github/license/jamesainslie/mdview" alt="License" />
+</p>
+
+<p align="center" class="mdview-logo-wrapper">
+  <img src="pics/logog.png" alt="MDView Logo" width="400" class="mdview-logo" />
+</p>
+
+<p align="center" class="mdview-tagline">
+  A modern Chrome extension for viewing Markdown files with beautiful themes, syntax highlighting, and interactive Mermaid diagrams.
+</p>
 
 ## Features
 
@@ -9,6 +29,7 @@ A modern Chrome extension for viewing Markdown files with beautiful themes, synt
 - **8 Beautiful Themes**: GitHub (Light/Dark), Catppuccin (Latte/Frappé/Macchiato/Mocha), Monokai, Monokai Pro
 - **Syntax Highlighting**: Support for 195+ programming languages with Highlight.js
 - **Interactive Mermaid Diagrams**: All diagram types with zoom, pan, maximize, and export
+- **Table of Contents**: Floating overlay for quick navigation and document structure visualization
 - **Auto Dark Mode**: Automatically switch themes based on system preference
 - **File Change Detection**: Auto-reload when markdown files are modified
 
@@ -74,6 +95,15 @@ See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for additional help.
 - **Popup**: Click the extension icon and select a theme
 - **Options Page**: Right-click icon → Options → Appearance
 - **Auto Mode**: Enable "Auto Dark Mode" to switch based on system preference
+
+### Using Table of Contents
+- **Enable**: Click extension icon → Toggle "Table of Contents"
+- **Navigate**: Click any heading to jump to that section
+- **Auto-highlight**: Current section is automatically highlighted as you scroll
+- **Collapse**: Enable auto-collapse in Options for cleaner nested structure
+- **Depth Control**: Configure max heading depth (H1-H2, H1-H3, etc.) in Options
+- **Close**: Click X button or press `Esc`
+- **Responsive**: Automatically hidden on screens narrower than 768px
 
 ### Interacting with Mermaid Diagrams
 - **Zoom**: Mouse wheel (+ Ctrl/Cmd) or `+`/`-` keys
@@ -163,6 +193,11 @@ Access full settings via Options page (right-click icon → Options):
 - Syntax highlighting theme
 - Line numbers toggle
 - Code font family
+
+**Table of Contents**
+- Show/hide toggle
+- Max heading depth (H1-H2, H1-H3, H1-H4, H1-H5, or all levels)
+- Auto-collapse nested sections
 
 **Diagrams**
 - Default zoom level
@@ -257,6 +292,14 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Changelog
 See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+## Screenshots
+
+| | | |
+|---|---|---|
+| [![](pics/2.png)](pics/2.png) | [![](pics/3.png)](pics/3.png) | [![](pics/4.png)](pics/4.png) |
+| [![](pics/5.png)](pics/5.png) | [![](pics/6.png)](pics/6.png) | [![](pics/7.png)](pics/7.png) |
+| [![](pics/8.png)](pics/8.png) | [![](pics/9.png)](pics/9.png) | |
 
 ---
 
