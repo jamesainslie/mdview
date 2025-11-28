@@ -7,6 +7,7 @@ import './content.css';
 import { FileScanner } from '../utils/file-scanner';
 import type { AppState } from '../types';
 import { debug } from '../utils/debug-logger';
+import { TocRenderer } from '../ui/toc-renderer';
 
 // Fix Vite's dynamic import base path for Chrome extensions
 // Override import.meta to use chrome-extension:// base URL
@@ -36,6 +37,7 @@ try {
 class MDViewContentScript {
   private autoReloadCleanup: (() => void) | null = null;
   private state: AppState | null = null;
+  private tocRenderer: TocRenderer | null = null;
 
   async initialize(): Promise<void> {
     // Prevent running in iframes (used for file watching)
@@ -221,6 +223,15 @@ class MDViewContentScript {
       loadingDiv.remove();
       debug.debug('MDView', 'Loading indicator removed');
 
+      // Setup TOC - always create toggle button, show TOC if enabled
+      if (this.state) {
+        debug.info('MDView', 'Setting up Table of Contents...');
+        const headings = this.extractHeadings(container);
+        if (headings.length > 0) {
+          this.setupToc(headings, this.state.preferences);
+        }
+      }
+
       // Set up auto-reload if enabled (after initial render completes)
       if (this.state?.preferences.autoReload) {
         debug.info('MDView', 'Auto-reload is enabled, setting up file watcher...');
@@ -277,6 +288,7 @@ class MDViewContentScript {
           syntaxTheme: 'github',
           autoReload: true,
           lineNumbers: false,
+          enableHtml: false,
           syncTabs: false,
           logLevel: 'error',
           debug: false,
@@ -481,6 +493,39 @@ class MDViewContentScript {
         }
       }
 
+      // Handle TOC visibility toggle
+      if (preferences.showToc !== undefined) {
+        if (preferences.showToc) {
+          // Create TOC if it doesn't exist
+          if (!this.tocRenderer && this.state) {
+            const container = document.getElementById('mdview-container');
+            if (container) {
+              const headings = this.extractHeadings(container);
+              if (headings.length > 0) {
+                this.setupToc(headings, { ...this.state.preferences, showToc: true });
+              }
+            }
+          }
+          // Show TOC (whether newly created or existing)
+          if (this.tocRenderer) {
+            this.tocRenderer.show();
+          }
+        } else if (this.tocRenderer) {
+          this.tocRenderer.hide();
+        }
+      }
+
+      // Handle TOC settings changes
+      if (
+        this.tocRenderer &&
+        (preferences.tocMaxDepth !== undefined || preferences.tocAutoCollapse !== undefined)
+      ) {
+        this.tocRenderer.updateOptions({
+          maxDepth: preferences.tocMaxDepth,
+          autoCollapse: preferences.tocAutoCollapse,
+        });
+      }
+
       // Check for structural changes that require re-render
       let needsReload = false;
       debug.info(
@@ -554,10 +599,126 @@ class MDViewContentScript {
     return div.innerHTML;
   }
 
+  /**
+   * Extract headings from rendered content
+   */
+  private extractHeadings(container: HTMLElement): Array<{
+    level: number;
+    text: string;
+    id: string;
+    line: number;
+  }> {
+    const headings: Array<{ level: number; text: string; id: string; line: number }> = [];
+    const headingElements = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+    headingElements.forEach((element, index) => {
+      const level = parseInt(element.tagName.substring(1));
+      const text = element.textContent || '';
+      let id = element.id;
+
+      // If no ID, generate one
+      if (!id) {
+        id = `heading-${index}-${text
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .substring(0, 50)}`;
+        element.id = id;
+      }
+
+      headings.push({
+        level,
+        text,
+        id,
+        line: 0, // Line number not available from rendered HTML
+      });
+    });
+
+    debug.info('MDView', `Extracted ${headings.length} headings from content`);
+    return headings;
+  }
+
+  /**
+   * Setup Table of Contents
+   */
+  private setupToc(
+    headings: Array<{ level: number; text: string; id: string; line: number }>,
+    preferences: AppState['preferences']
+  ): void {
+    try {
+      // Clean up existing TOC if any
+      if (this.tocRenderer) {
+        this.tocRenderer.destroy();
+      }
+
+      // Create new TOC renderer
+      this.tocRenderer = new TocRenderer({
+        maxDepth: preferences.tocMaxDepth || 6,
+        autoCollapse: preferences.tocAutoCollapse || false,
+        position: preferences.tocPosition || 'left',
+      });
+
+      // Render TOC
+      const tocElement = this.tocRenderer.render(headings);
+      document.body.appendChild(tocElement);
+
+      // Always create the toggle button
+      this.tocRenderer.createToggleButton();
+
+      // Show TOC if enabled
+      if (preferences.showToc) {
+        this.tocRenderer.show();
+      }
+
+      // Listen for TOC toggle event to update preferences
+      document.addEventListener('mdview:toc:toggled', ((e: Event) => {
+        const customEvent = e as CustomEvent<{ visible: boolean }>;
+        void this.handlePreferenceChange({ showToc: customEvent.detail.visible });
+      }) as EventListener);
+
+      // Listen for TOC hidden event to update preferences
+      document.addEventListener('mdview:toc:hidden', () => {
+        void this.handlePreferenceChange({ showToc: false });
+      });
+
+      debug.info('MDView', 'Table of Contents initialized');
+    } catch (error) {
+      debug.error('MDView', 'Failed to setup TOC:', error);
+    }
+  }
+
+  /**
+   * Handle preference changes
+   */
+  private async handlePreferenceChange(
+    preferences: Partial<AppState['preferences']>
+  ): Promise<void> {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'UPDATE_PREFERENCES',
+        payload: { preferences },
+      });
+
+      // Update local state
+      if (this.state) {
+        this.state.preferences = { ...this.state.preferences, ...preferences };
+      }
+
+      debug.info('MDView', 'Preferences updated:', preferences);
+    } catch (error) {
+      debug.error('MDView', 'Failed to update preferences:', error);
+    }
+  }
+
   cleanup(): void {
     if (this.autoReloadCleanup) {
       this.autoReloadCleanup();
       this.autoReloadCleanup = null;
+    }
+
+    if (this.tocRenderer) {
+      this.tocRenderer.destroy();
+      this.tocRenderer = null;
     }
   }
 }

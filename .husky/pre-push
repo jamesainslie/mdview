@@ -1,0 +1,14 @@
+echo "Running tests before push..."
+npm run test:ci
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "👎 Tests failed. Push aborted."
+  echo "Fix the failing tests before pushing."
+  echo ""
+  exit 1
+fi
+
+echo "👌 All tests passed!"
+echo ""
+

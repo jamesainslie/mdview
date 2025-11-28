@@ -89,12 +89,19 @@ class OptionsManager {
     this.setValue('light-theme', preferences.lightTheme);
     this.setValue('dark-theme', preferences.darkTheme);
     this.setValue('code-line-numbers', preferences.lineNumbers);
+    this.setValue('enable-html', !!preferences.enableHtml);
 
     // Appearance Overrides
     this.setValue('font-family', preferences.fontFamily || '');
     this.setValue('code-font-family', preferences.codeFontFamily || '');
     this.setValue('line-height', preferences.lineHeight || '');
     this.setValue('max-width', preferences.maxWidth || '');
+
+    // Table of Contents
+    this.setValue('show-toc', !!preferences.showToc);
+    this.setValue('toc-max-depth', preferences.tocMaxDepth || 6);
+    this.setValue('toc-auto-collapse', !!preferences.tocAutoCollapse);
+    this.setValue('toc-position', preferences.tocPosition || 'left');
 
     // Diagrams
     // Use defaults
@@ -219,12 +226,19 @@ class OptionsManager {
         lightTheme: this.getSelectValue('light-theme') as ThemeName,
         darkTheme: this.getSelectValue('dark-theme') as ThemeName,
         lineNumbers: this.getCheckboxValue('code-line-numbers'),
+        enableHtml: this.getCheckboxValue('enable-html'),
 
         // Overrides
         fontFamily: this.getInputValue('font-family'),
         codeFontFamily: this.getInputValue('code-font-family'),
         lineHeight: this.getNumberValue('line-height'),
         maxWidth: this.getNumberValue('max-width'),
+
+        // Table of Contents
+        showToc: this.getCheckboxValue('show-toc'),
+        tocMaxDepth: this.getNumberValue('toc-max-depth') || 6,
+        tocAutoCollapse: this.getCheckboxValue('toc-auto-collapse'),
+        tocPosition: this.getSelectValue('toc-position') as 'left' | 'right',
 
         autoReload: this.getCheckboxValue('auto-reload'),
         syncTabs: this.getCheckboxValue('sync-tabs'),
@@ -375,6 +389,7 @@ class OptionsManager {
         syntaxTheme: 'github',
         autoReload: true,
         lineNumbers: false,
+        enableHtml: false,
         syncTabs: false,
         logLevel: 'error',
       };

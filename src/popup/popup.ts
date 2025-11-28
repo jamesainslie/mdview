@@ -94,6 +94,11 @@ class PopupManager {
       lineNumbers.checked = preferences.lineNumbers;
     }
 
+    const enableHtml = document.getElementById('enable-html') as HTMLInputElement;
+    if (enableHtml) {
+      enableHtml.checked = !!preferences.enableHtml;
+    }
+
     const useMaxWidth = document.getElementById('use-max-width') as HTMLInputElement;
     if (useMaxWidth) {
       useMaxWidth.checked = !!preferences.useMaxWidth;
@@ -102,6 +107,11 @@ class PopupManager {
     const syncTabs = document.getElementById('sync-tabs') as HTMLInputElement;
     if (syncTabs) {
       syncTabs.checked = preferences.syncTabs;
+    }
+
+    const showToc = document.getElementById('show-toc') as HTMLInputElement;
+    if (showToc) {
+      showToc.checked = !!preferences.showToc;
     }
 
     // Update log level select
@@ -154,6 +164,21 @@ class PopupManager {
       });
     }
 
+    // Enable HTML toggle
+    const enableHtml = document.getElementById('enable-html');
+    if (enableHtml) {
+      enableHtml.addEventListener('change', (e) => {
+        const target = e.target as HTMLInputElement;
+        debug.log('Popup', 'Enable HTML toggle changed:', target.checked);
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        void (async () => {
+          await this.handlePreferenceChange({ enableHtml: target.checked });
+          // Trigger reload to re-render with HTML enabled/disabled
+          await chrome.tabs.reload();
+        })();
+      });
+    }
+
     // Use max width toggle
     const useMaxWidth = document.getElementById('use-max-width');
     if (useMaxWidth) {
@@ -175,6 +200,21 @@ class PopupManager {
       syncTabs.addEventListener('change', (e) => {
         const target = e.target as HTMLInputElement;
         void this.handlePreferenceChange({ syncTabs: target.checked });
+      });
+    }
+
+    // Show TOC toggle
+    const showToc = document.getElementById('show-toc');
+    if (showToc) {
+      showToc.addEventListener('change', (e) => {
+        const target = e.target as HTMLInputElement;
+        debug.log('Popup', 'Show TOC toggle changed:', target.checked);
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        void (async () => {
+          await this.handlePreferenceChange({ showToc: target.checked });
+          // Trigger reload to show/hide TOC
+          await chrome.tabs.reload();
+        })();
       });
     }
 

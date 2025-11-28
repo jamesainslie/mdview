@@ -124,6 +124,37 @@ npm run build
 npx tsc --noEmit
 ```
 
+### Git Hooks
+
+The repository uses Husky to enforce quality checks automatically:
+
+#### Pre-commit Hook
+Runs automatically when you commit:
+- **Linting**: Runs ESLint with auto-fix on staged files
+- **Formatting**: Applies Prettier to staged files
+- **Scope**: Only checks staged TypeScript files in `src/` and `tests/`
+
+This is fast and ensures all committed code follows project standards.
+
+#### Pre-push Hook
+Runs automatically when you push:
+- **Full Test Suite**: Runs all unit tests (`npm run test:ci`)
+- **Exit Code**: Push is aborted if any tests fail
+
+This prevents pushing broken code to CI and catches issues early.
+
+**Note**: The pre-push hook takes ~15 seconds. If you need to skip it temporarily (not recommended):
+```bash
+git push --no-verify
+```
+
+#### Troubleshooting Hooks
+If hooks aren't running:
+```bash
+# Reinstall husky hooks
+npm run prepare
+```
+
 ## Pull Request Process
 
 ### Before Submitting
@@ -133,13 +164,15 @@ npx tsc --noEmit
    git rebase origin/main
    ```
 
-2. Run all checks:
+2. Run all checks (or rely on git hooks):
    ```bash
-   npm run lint
-   npx tsc --noEmit
-   npm test
-   npm run test:e2e
+   npm run lint           # Auto-runs on commit via pre-commit hook
+   npx tsc --noEmit      # Type checking
+   npm run test:ci       # Auto-runs on push via pre-push hook
+   npm run test:e2e      # E2E tests (run manually if UI changes)
    ```
+   
+   **Note**: If you commit and push normally, the hooks will automatically run linting, formatting, and tests.
 
 3. Update CHANGELOG.md with your changes
 

@@ -593,6 +593,42 @@ img {
   box-shadow: 0 1px 3px var(--md-shadow);
 }
 
+/* README / hero section helpers (used in project docs like README.md) */
+.mdview-hero-title {
+  text-align: center;
+  margin-top: 0;
+}
+
+.mdview-badges {
+  text-align: center;
+  margin: 12px 0 8px 0;
+}
+
+.mdview-badges img {
+  display: inline-block;
+  margin: 0 4px;
+  box-shadow: none;
+  border-radius: 4px;
+}
+
+.mdview-logo-wrapper {
+  text-align: center;
+  margin: 16px 0 8px 0;
+}
+
+.mdview-logo {
+  display: inline-block;
+  margin: 0 auto;
+  box-shadow: none;
+  border-radius: 16px;
+}
+
+.mdview-tagline {
+  text-align: center;
+  font-style: italic;
+  margin-bottom: 24px;
+}
+
 img[loading="lazy"] {
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -866,6 +902,251 @@ img[loading="lazy"].loaded {
   }
 }
 
+/* Table of Contents - Fixed Sidebar */
+.mdview-toc-overlay {
+  position: fixed;
+  top: 0;
+  width: 280px;
+  height: 100vh;
+  background-color: var(--md-bg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+}
+
+.mdview-toc-overlay.position-left {
+  left: 0;
+  border-right: 1px solid var(--md-border);
+  transform: translateX(-100%);
+}
+
+.mdview-toc-overlay.position-left.visible {
+  transform: translateX(0);
+}
+
+.mdview-toc-overlay.position-right {
+  right: 0;
+  border-left: 1px solid var(--md-border);
+  transform: translateX(100%);
+}
+
+.mdview-toc-overlay.position-right.visible {
+  transform: translateX(0);
+}
+
+/* Push content when TOC is visible */
+body.toc-visible-left #mdview-container {
+  margin-left: 280px;
+  transition: margin-left 0.3s ease;
+}
+
+body.toc-visible-right #mdview-container {
+  margin-right: 280px;
+  transition: margin-right 0.3s ease;
+}
+
+/* TOC Toggle Button - Subtle */
+.mdview-toc-toggle-btn {
+  position: fixed;
+  top: 16px;
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  color: var(--md-fg);
+  opacity: 0.4;
+}
+
+.mdview-toc-toggle-btn:hover {
+  opacity: 1;
+  background-color: var(--md-code-bg);
+  border-color: var(--md-border);
+  box-shadow: 0 1px 4px var(--md-shadow);
+}
+
+.mdview-toc-toggle-btn.position-left {
+  left: 16px;
+}
+
+.mdview-toc-toggle-btn.position-right {
+  right: 16px;
+}
+
+body.toc-visible-left .mdview-toc-toggle-btn.position-left {
+  left: 296px;
+  opacity: 0.6;
+}
+
+body.toc-visible-right .mdview-toc-toggle-btn.position-right {
+  right: 296px;
+  opacity: 0.6;
+}
+
+.mdview-toc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--md-border);
+  background-color: var(--md-code-bg);
+}
+
+.mdview-toc-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--md-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mdview-toc-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--md-fg);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mdview-toc-close:hover {
+  background-color: var(--md-border);
+}
+
+.mdview-toc-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 0;
+}
+
+.mdview-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mdview-toc-item {
+  position: relative;
+  margin: 0;
+}
+
+.mdview-toc-link {
+  display: block;
+  padding: 6px 16px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--md-fg);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-left: 2px solid transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mdview-toc-link:hover {
+  color: var(--md-link);
+  background-color: var(--md-code-bg);
+}
+
+.mdview-toc-item.active > .mdview-toc-link {
+  color: var(--md-link);
+  border-left-color: var(--md-link);
+  background-color: var(--md-code-bg);
+  font-weight: 500;
+}
+
+/* Heading level indentation */
+.mdview-toc-level-1 > .mdview-toc-link {
+  padding-left: 16px;
+}
+
+.mdview-toc-level-2 > .mdview-toc-link {
+  padding-left: 28px;
+}
+
+.mdview-toc-level-3 > .mdview-toc-link {
+  padding-left: 40px;
+}
+
+.mdview-toc-level-4 > .mdview-toc-link {
+  padding-left: 52px;
+}
+
+.mdview-toc-level-5 > .mdview-toc-link {
+  padding-left: 64px;
+}
+
+.mdview-toc-level-6 > .mdview-toc-link {
+  padding-left: 76px;
+}
+
+/* Collapse/expand toggle */
+.mdview-toc-toggle {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--md-fg);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.mdview-toc-toggle:hover {
+  opacity: 1;
+}
+
+.mdview-toc-item.has-children {
+  position: relative;
+}
+
+.mdview-toc-item.has-children > ul {
+  transition: all 0.2s ease;
+}
+
+/* Scrollbar styling for TOC */
+.mdview-toc-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mdview-toc-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mdview-toc-content::-webkit-scrollbar-thumb {
+  background: var(--md-border);
+  border-radius: 3px;
+}
+
+.mdview-toc-content::-webkit-scrollbar-thumb:hover {
+  background: var(--md-link);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   #mdview-container {
@@ -876,5 +1157,10 @@ img[loading="lazy"].loaded {
     margin-left: -20px;
     margin-right: -20px;
     padding: 0 20px;
+  }
+
+  /* Hide TOC on narrow screens */
+  .mdview-toc-overlay {
+    display: none;
   }
 }
