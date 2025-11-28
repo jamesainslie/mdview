@@ -12,6 +12,25 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.2.5](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.4...mdview-v0.2.5) (2025-11-28)
+
+
+### Features
+
+* **ci:** add makefile build system and optimize ui ([f1ece96](https://github.com/jamesainslie/mdview/commit/f1ece96a86bbd4f91890fc33f527bd9405a18dd0))
+* **ci:** creat a Makefile ([c642f28](https://github.com/jamesainslie/mdview/commit/c642f28a7a75f53040f33d628d47744f7b38851b))
+* **options:** add attribution footer for consistency ([2f26149](https://github.com/jamesainslie/mdview/commit/2f26149f10baca0bbe516684408d277386eb214d))
+
+
+### Code Refactoring
+
+* **popup:** optimize layout and add attribution footer ([4519922](https://github.com/jamesainslie/mdview/commit/4519922bb355d32587fa92941a565f35ce677ae6))
+
+
+### Documentation
+
+* **readme:** document makefile build system ([e918871](https://github.com/jamesainslie/mdview/commit/e918871bc88f35647fa8d2f8b12a14574efb408c))
+
 ## [0.2.4](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.3...mdview-v0.2.4) (2025-11-28)
 
 
