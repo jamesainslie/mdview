@@ -6,7 +6,7 @@ npm run test:ci
 
 if [ $? -ne 0 ]; then
   echo ""
-  echo "❌ Tests failed. Push aborted."
+  echo "👎 Tests failed. Push aborted."
   echo "Fix the failing tests before pushing."
   exit 1
 fi
