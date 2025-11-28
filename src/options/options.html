@@ -78,6 +78,14 @@
             </div>
 
             <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="enable-html" class="setting-checkbox" />
+                Enable HTML Rendering
+              </label>
+              <p class="setting-description">Allow HTML tags within markdown files. Content is sanitized for security.</p>
+            </div>
+
+            <div class="setting-group">
               <label for="font-family" class="setting-label">Font Family (Standard)</label>
               <input type="text" id="font-family" class="setting-input" placeholder="Default: -apple-system, BlinkMacSystemFont, ..." />
               <p class="setting-description">Leave empty to use theme default</p>
@@ -99,6 +107,45 @@
               <label for="max-width" class="setting-label">Max Width (px)</label>
               <input type="number" id="max-width" class="setting-input" min="600" max="2000" step="20" placeholder="Default: 980" />
               <p class="setting-description">Leave empty to use theme default</p>
+            </div>
+
+            <h3 style="margin-top: 32px; margin-bottom: 16px; font-size: 18px;">Table of Contents</h3>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="show-toc" class="setting-checkbox" />
+                Show Table of Contents
+              </label>
+              <p class="setting-description">Display a floating table of contents overlay on the left side</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="toc-max-depth" class="setting-label">Max Heading Depth</label>
+              <select id="toc-max-depth" class="setting-input">
+                <option value="2">H1-H2</option>
+                <option value="3">H1-H3</option>
+                <option value="4">H1-H4</option>
+                <option value="5">H1-H5</option>
+                <option value="6">All Levels</option>
+              </select>
+              <p class="setting-description">Maximum heading level to display in table of contents</p>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="toc-auto-collapse" class="setting-checkbox" />
+                Auto-collapse Sections
+              </label>
+              <p class="setting-description">Collapse nested sections by default for cleaner TOC</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="toc-position" class="setting-label">Position</label>
+              <select id="toc-position" class="setting-input">
+                <option value="left">Left Side</option>
+                <option value="right">Right Side</option>
+              </select>
+              <p class="setting-description">Choose which side to display the table of contents</p>
             </div>
           </section>
 
