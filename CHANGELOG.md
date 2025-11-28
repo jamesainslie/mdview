@@ -12,6 +12,25 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.2.7](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.6...mdview-v0.2.7) (2025-11-28)
+
+
+### Features
+
+* **branding:** update extension icons to window frame design ([5e7e1ae](https://github.com/jamesainslie/mdview/commit/5e7e1aeeab6819b8bd75b5f772dc96d6e29b2234))
+* **branding:** update icons and fix version sync ([1751058](https://github.com/jamesainslie/mdview/commit/17510588d5c21eb6e70e612dd46923ac6c66cfd5))
+
+
+### Documentation
+
+* **branding:** update readme logo images ([731d131](https://github.com/jamesainslie/mdview/commit/731d131a6f94b5d8a4fb6407c82f2c272c6e0728))
+* **readme:** fix broken links and revert logo to original ([20951b6](https://github.com/jamesainslie/mdview/commit/20951b62e96596d1051558165c6746ccbe36ed63))
+
+
+### Build System
+
+* **manifest:** auto-sync version from package.json ([5c694ed](https://github.com/jamesainslie/mdview/commit/5c694edc3eb97e61e91e33b4f9f5519fa1a64e8c))
+
 ## [0.2.6](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.5...mdview-v0.2.6) (2025-11-28)
 
 
