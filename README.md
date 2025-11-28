@@ -7,11 +7,7 @@
   <a href="https://github.com/jamesainslie/mdview/actions/workflows/release-please.yml">
     <img src="https://github.com/jamesainslie/mdview/actions/workflows/release-please.yml/badge.svg?branch=main" alt="Release Please" />
   </a>
-  <a href="https://github.com/jamesainslie/mdview/actions/workflows/release-extension.yml">
-    <img src="https://github.com/jamesainslie/mdview/actions/workflows/release-extension.yml/badge.svg?branch=main&event=push" alt="Release Extension" />
-  </a>
   <img src="https://img.shields.io/github/package-json/v/jamesainslie/mdview?branch=main" alt="Version" />
-  <img src="https://img.shields.io/github/license/jamesainslie/mdview" alt="License" />
 </p>
 
 <p align="center" class="mdview-logo-wrapper">
