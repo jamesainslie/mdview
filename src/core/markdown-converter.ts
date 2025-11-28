@@ -15,6 +15,7 @@ export interface ConvertOptions {
   breaks?: boolean;
   linkify?: boolean;
   typographer?: boolean;
+  enableHtml?: boolean;
   highlight?: (code: string, lang: string) => string;
 }
 
@@ -32,7 +33,7 @@ export class MarkdownConverter {
   constructor(options?: ConvertOptions) {
     // Initialize markdown-it
     this.md = new MarkdownIt({
-      html: false, // Security: no raw HTML tags in source
+      html: options?.enableHtml ?? false, // Security: no raw HTML tags by default
       breaks: options?.breaks ?? true, // GFM line breaks
       linkify: options?.linkify ?? true, // Auto-convert URLs to links
       typographer: options?.typographer ?? true, // Smart quotes and replacements
@@ -307,6 +308,24 @@ export class MarkdownConverter {
       "'": '&#039;',
     };
     return text.replace(/[&<>"']/g, (m) => map[m]);
+  }
+
+  /**
+   * Update converter options (e.g., to enable/disable HTML)
+   */
+  updateOptions(options: Partial<ConvertOptions>): void {
+    if (options.enableHtml !== undefined) {
+      this.md.set({ html: options.enableHtml });
+    }
+    if (options.breaks !== undefined) {
+      this.md.set({ breaks: options.breaks });
+    }
+    if (options.linkify !== undefined) {
+      this.md.set({ linkify: options.linkify });
+    }
+    if (options.typographer !== undefined) {
+      this.md.set({ typographer: options.typographer });
+    }
   }
 
   /**

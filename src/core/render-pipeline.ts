@@ -91,6 +91,11 @@ export class RenderPipeline {
       useLazySections = false, // Lazy sections disabled by default
     } = options;
 
+    // Update markdown converter options based on preferences
+    this.converter.updateOptions({
+      enableHtml: !!(preferences as { enableHtml?: boolean }).enableHtml,
+    });
+
     const shouldUseWorkers = useWorkers && this.workersEnabled;
 
     try {
@@ -142,6 +147,7 @@ export class RenderPipeline {
               breaks: true,
               linkify: true,
               typographer: true,
+              enableHtml: !!(preferences as { enableHtml?: boolean }).enableHtml,
             },
           };
 
@@ -510,6 +516,11 @@ export class RenderPipeline {
       'Starting progressive hydration with preferences:',
       JSON.stringify(preferences)
     );
+
+    // Update markdown converter options based on preferences
+    this.converter.updateOptions({
+      enableHtml: !!(preferences as { enableHtml?: boolean }).enableHtml,
+    });
 
     // Split markdown into sections
     const sections = splitIntoSections(markdown);

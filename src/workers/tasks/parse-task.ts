@@ -36,7 +36,7 @@ export function handleParseTask(payload: unknown): ParseTaskResult {
 
   // Initialize markdown-it
   const md = new MarkdownIt({
-    html: false,
+    html: options?.enableHtml ?? false, // Security: no raw HTML tags by default
     breaks: options?.breaks ?? true,
     linkify: options?.linkify ?? true,
     typographer: options?.typographer ?? true,
