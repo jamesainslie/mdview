@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MDView - Markdown Viewer",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Beautiful markdown file viewer with themes, syntax highlighting, and interactive Mermaid diagrams",
   "permissions": [
     "storage",
