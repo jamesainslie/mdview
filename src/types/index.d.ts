@@ -32,6 +32,7 @@ export interface AppState {
     syntaxTheme: string;
     autoReload: boolean;
     lineNumbers: boolean;
+    enableHtml: boolean; // Enable HTML rendering in markdown
     syncTabs: boolean;
     logLevel: LogLevel;
     debug?: boolean; // Deprecated
@@ -41,6 +42,11 @@ export interface AppState {
     lineHeight?: number;
     maxWidth?: number;
     useMaxWidth?: boolean; // Toggle for full width
+    // Table of Contents
+    showToc?: boolean; // Enable/disable TOC
+    tocMaxDepth?: number; // Max heading depth (1-6)
+    tocAutoCollapse?: boolean; // Auto-collapse nested sections
+    tocPosition?: 'left' | 'right'; // Position of TOC
   };
   document: {
     path: string;
@@ -52,6 +58,7 @@ export interface AppState {
     theme: Theme | null;
     maximizedDiagram: string | null;
     visibleDiagrams: Set<string>;
+    tocVisible?: boolean; // Current TOC visibility state
   };
 }
 
@@ -255,6 +262,7 @@ export interface ParseTaskPayload {
     breaks?: boolean;
     linkify?: boolean;
     typographer?: boolean;
+    enableHtml?: boolean;
   };
 }
 
