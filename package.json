@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch",
-    "build": "tsc && vite build && node scripts/fix-manifest.js",
+    "build": "node scripts/update-manifest-version.js && tsc && vite build && node scripts/fix-manifest.js",
     "preview": "vite preview",
     "test": "vitest",
     "test:ci": "vitest --run",
