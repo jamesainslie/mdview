@@ -132,7 +132,7 @@ MDView includes both NPM scripts and a Makefile for building and development tas
 ```
 mdview/
 ├── src/
-│   ├── background/         # Service worker
+│   ├── background/        # Service worker
 │   ├── content/           # Content script
 │   ├── core/              # Core rendering logic (pipeline, converter)
 │   ├── renderers/         # Syntax & Mermaid renderers
