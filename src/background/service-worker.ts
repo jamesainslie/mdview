@@ -17,8 +17,13 @@ const defaultState: AppState = {
     syntaxTheme: 'github',
     autoReload: true,
     lineNumbers: false,
+    enableHtml: false,
     syncTabs: false,
     logLevel: 'error',
+    showToc: false,
+    tocMaxDepth: 6,
+    tocAutoCollapse: false,
+    tocPosition: 'left',
   },
   document: {
     path: '',
@@ -30,6 +35,7 @@ const defaultState: AppState = {
     theme: null,
     maximizedDiagram: null,
     visibleDiagrams: new Set(),
+    tocVisible: false,
   },
 };
 
