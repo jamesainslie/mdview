@@ -12,6 +12,14 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.2.6](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.5...mdview-v0.2.6) (2025-11-28)
+
+
+### Documentation
+
+* **readme:** remove non-working ci badges ([efce24a](https://github.com/jamesainslie/mdview/commit/efce24a3caed32fd9d0e48aecf44a584ecc0eea3))
+* **readme:** remove non-working ci badges ([e7d6157](https://github.com/jamesainslie/mdview/commit/e7d61577261166bdc021777fb3af33badb8c582e))
+
 ## [0.2.5](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.4...mdview-v0.2.5) (2025-11-28)
 
 
