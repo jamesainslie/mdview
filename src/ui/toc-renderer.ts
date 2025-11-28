@@ -91,14 +91,16 @@ export class TocRenderer {
     this.toggleButton.setAttribute('aria-label', 'Toggle table of contents');
     this.toggleButton.setAttribute('title', 'Toggle Table of Contents');
     this.toggleButton.innerHTML = '☰';
-    
+
     this.toggleButton.addEventListener('click', () => {
       this.toggle();
       // Update preferences when toggled
       const newState = this.container?.classList.contains('visible');
-      document.dispatchEvent(new CustomEvent('mdview:toc:toggled', { 
-        detail: { visible: newState } 
-      }));
+      document.dispatchEvent(
+        new CustomEvent('mdview:toc:toggled', {
+          detail: { visible: newState },
+        })
+      );
     });
 
     document.body.appendChild(this.toggleButton);
@@ -423,4 +425,3 @@ export class TocRenderer {
     }
   }
 }
-
