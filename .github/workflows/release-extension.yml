@@ -45,7 +45,7 @@ jobs:
         run: npm run build
 
       - name: Create extension zip
-        run: cd dist && zip -r ../extension.zip .
+        run: cd dist && zip -r ../extension.zip . -x '*.vite/*' -x '.vite'
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
