@@ -7,11 +7,13 @@
   <a href="https://github.com/jamesainslie/mdview/actions/workflows/release-please.yml">
     <img src="https://github.com/jamesainslie/mdview/actions/workflows/release-please.yml/badge.svg" alt="Release Please" />
   </a>
-  <a href="https://github.com/jamesainslie/mdview/actions/workflows/release-extension.yml">
-    <img src="https://github.com/jamesainslie/mdview/actions/workflows/release-extension.yml/badge.svg" alt="Release Extension" />
+  <a href="https://github.com/jamesainslie/mdview/releases">
+    <img src="https://img.shields.io/github/v/release/jamesainslie/mdview?label=latest%20release" alt="Latest Release" />
   </a>
   <img src="https://img.shields.io/github/package-json/v/jamesainslie/mdview" alt="Version" />
-  <img src="https://img.shields.io/github/license/jamesainslie/mdview" alt="License" />
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" />
+  </a>
 </p>
 
 <p align="center" class="mdview-logo-wrapper">
