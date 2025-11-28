@@ -12,6 +12,14 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.2.4](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.3...mdview-v0.2.4) (2025-11-28)
+
+
+### Bug Fixes
+
+* **docs:** add branch parameter to github actions badges ([10a6262](https://github.com/jamesainslie/mdview/commit/10a62620dd2ec9dda7b489873a813760f11d8203))
+* **docs:** add branch parameter to github actions badges ([5cd3658](https://github.com/jamesainslie/mdview/commit/5cd36584d0d1d12d1551b4ed22be3a2166f45350))
+
 ## [0.2.3](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.2...mdview-v0.2.3) (2025-11-28)
 
 
