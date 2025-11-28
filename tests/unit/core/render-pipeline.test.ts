@@ -431,6 +431,7 @@ describe('RenderPipeline', () => {
         convert: vi.fn().mockImplementation(() => {
           throw new Error('Parse error');
         }),
+        updateOptions: vi.fn(),
       });
 
       try {
