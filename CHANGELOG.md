@@ -12,6 +12,34 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.2.3](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.2...mdview-v0.2.3) (2025-11-28)
+
+
+### Features
+
+* **content:** integrate table of contents into content script ([a765cee](https://github.com/jamesainslie/mdview/commit/a765cee430383b37bf7942b8f937d69222ec7600))
+* **core:** add HTML rendering configuration support ([7da9ba8](https://github.com/jamesainslie/mdview/commit/7da9ba83da7e79360f067a83c3d09b1848658499))
+* **ui:** add table of contents controls to popup and options ([7c8439c](https://github.com/jamesainslie/mdview/commit/7c8439c6a4c12ac82a9a445df729895afd170f69))
+* **ui:** add table of contents styling and layout ([8f83ad5](https://github.com/jamesainslie/mdview/commit/8f83ad5afd8945a3b4ad73d223a1a9b219c811b1))
+* **ui:** implement table of contents renderer ([cff69a0](https://github.com/jamesainslie/mdview/commit/cff69a0da5c459ff4db735ab052e9644a28db819))
+* **ui:** implement table of contents with navigation and configuration ([82ea0db](https://github.com/jamesainslie/mdview/commit/82ea0db194e5c30d8dd4a8eb9321d67797a21651))
+
+
+### Bug Fixes
+
+* **hooks:** remove deprecated husky shebang for v10 compatibility ([a4501ab](https://github.com/jamesainslie/mdview/commit/a4501ab371d44badce18402569bbae8dad54abf5))
+
+
+### Documentation
+
+* **contributing:** document git hooks for automated quality checks ([a03fdcf](https://github.com/jamesainslie/mdview/commit/a03fdcf996e1f56bd39d6f91d080de3937125b13))
+* update README with TOC feature and improve layout ([2a7da59](https://github.com/jamesainslie/mdview/commit/2a7da59fd725972b037bc5a986b5890084eb81f9))
+
+
+### Tests
+
+* **core:** fix render-pipeline test mock for updateOptions ([6e0c0a2](https://github.com/jamesainslie/mdview/commit/6e0c0a21aaf3a912f8c9245298865be12b73da37))
+
 ## [0.2.2](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.1...mdview-v0.2.2) (2025-11-28)
 
 
