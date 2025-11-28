@@ -42,9 +42,7 @@
 ## Installation
 
 ### From Chrome Web Store
-1. Visit the [MDView page on Chrome Web Store](#) (coming soon)
-2. Click "Add to Chrome"
-3. Grant file access permissions when prompted
+Coming soon! MDView will be available on the Chrome Web Store.
 
 ### From Source
 1. Clone this repository:
@@ -80,8 +78,6 @@ To view local markdown files:
 2. Find **MDView - Markdown Viewer**
 3. Click **"Details"**
 4. Scroll down and **enable "Allow access to file URLs"**
-
-See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for additional help.
 
 ## Usage
 
