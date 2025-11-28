@@ -12,6 +12,15 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.2.2](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.1...mdview-v0.2.2) (2025-11-28)
+
+
+### Documentation
+
+* add Chrome Web Store submission assets ([2b6329b](https://github.com/jamesainslie/mdview/commit/2b6329be882de5ea1babfa93db6edd0ae207e763))
+* add feature showcase document ([19ebf6e](https://github.com/jamesainslie/mdview/commit/19ebf6e7326314a8aabec2872048b967dfbb786c))
+* add privacy policy ([874a0e1](https://github.com/jamesainslie/mdview/commit/874a0e1045e5acf95815fb4c7d2fa01a178b5f41))
+
 ## [0.2.1](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.0...mdview-v0.2.1) (2025-11-28)
 
 
