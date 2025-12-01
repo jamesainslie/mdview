@@ -343,4 +343,151 @@ Content here.`;
       expect(result.tocFound).toBe(false);
     });
   });
+
+  describe('Additional Edge Cases', () => {
+    it('should strip TOC at the very beginning of document', () => {
+      const markdown = `## Table of Contents
+
+- [Introduction](#introduction)
+- [Getting Started](#getting-started)
+
+## Introduction
+
+Content here.`;
+
+      const result = stripTableOfContents(markdown);
+
+      expect(result.tocFound).toBe(true);
+      expect(result.markdown).not.toContain('Table of Contents');
+      expect(result.markdown).toContain('## Introduction');
+      expect(result.markdown).toContain('Content here.');
+    });
+
+    it('should strip TOC with markdown formatting in link text', () => {
+      const markdown = `## Table of Contents
+
+- [**Bold Section**](#bold-section)
+- [*Italic Section*](#italic-section)
+- [\`Code Section\`](#code-section)
+
+## Bold Section`;
+
+      const result = stripTableOfContents(markdown);
+
+      expect(result.tocFound).toBe(true);
+      expect(result.markdown).not.toContain('Table of Contents');
+      expect(result.markdown).not.toContain('[**Bold Section**]');
+      expect(result.markdown).toContain('## Bold Section');
+    });
+
+    it('should handle TOC with very deep nesting (4-5 levels)', () => {
+      const markdown = `## Contents
+
+- [Chapter 1](#chapter-1)
+  - [Section 1.1](#section-11)
+    - [Subsection 1.1.1](#subsection-111)
+      - [Subsubsection 1.1.1.1](#subsubsection-1111)
+        - [Paragraph 1.1.1.1.1](#paragraph-11111)
+- [Chapter 2](#chapter-2)
+
+## Chapter 1`;
+
+      const result = stripTableOfContents(markdown);
+
+      expect(result.tocFound).toBe(true);
+      expect(result.markdown).not.toContain('## Contents');
+      expect(result.markdown).not.toContain('[Chapter 1](#chapter-1)');
+      expect(result.markdown).not.toContain('Paragraph 1.1.1.1.1');
+      expect(result.markdown).toContain('## Chapter 1');
+    });
+
+    it('should strip TOC with mixed spacing and indentation', () => {
+      const markdown = `## Table of Contents
+
+-   [Section 1](#section-1)
+  -  [Section 1.1](#section-11)
+- [Section 2](#section-2)
+   - [Section 2.1](#section-21)
+
+## Section 1`;
+
+      const result = stripTableOfContents(markdown);
+
+      expect(result.tocFound).toBe(true);
+      expect(result.markdown).not.toContain('Table of Contents');
+      expect(result.markdown).toContain('## Section 1');
+    });
+
+    it('should handle TOC with special characters and emojis in links', () => {
+      const markdown = `## Table of Contents
+
+- [🚀 Getting Started](#-getting-started)
+- [⚙️ Configuration](#️-configuration)
+- [FAQ & Tips](#faq--tips)
+
+## 🚀 Getting Started`;
+
+      const result = stripTableOfContents(markdown);
+
+      expect(result.tocFound).toBe(true);
+      expect(result.markdown).not.toContain('Table of Contents');
+      expect(result.markdown).toContain('## 🚀 Getting Started');
+    });
+
+    it('should preserve non-TOC content immediately before and after', () => {
+      const markdown = `# Project
+
+This is an introduction paragraph.
+
+## Table of Contents
+
+- [Setup](#setup)
+- [Usage](#usage)
+
+This paragraph comes right after the TOC.
+
+## Setup
+
+Installation instructions.`;
+
+      const result = stripTableOfContents(markdown);
+
+      expect(result.tocFound).toBe(true);
+      expect(result.markdown).toContain('This is an introduction paragraph.');
+      expect(result.markdown).toContain('This paragraph comes right after the TOC.');
+      expect(result.markdown).toContain('## Setup');
+      expect(result.markdown).not.toContain('Table of Contents');
+    });
+
+    it('should handle single-item TOC', () => {
+      const markdown = `## Table of Contents
+
+- [Introduction](#introduction)
+
+## Introduction
+
+Content.`;
+
+      const result = stripTableOfContents(markdown);
+
+      expect(result.tocFound).toBe(true);
+      expect(result.markdown).not.toContain('Table of Contents');
+      expect(result.markdown).toContain('## Introduction');
+    });
+
+    it('should handle TOC with links containing uppercase anchors', () => {
+      const markdown = `## Contents
+
+- [SECTION A](#SECTION-A)
+- [Section B](#Section-B)
+
+## SECTION A`;
+
+      const result = stripTableOfContents(markdown);
+
+      expect(result.tocFound).toBe(true);
+      expect(result.markdown).not.toContain('## Contents');
+      expect(result.markdown).toContain('## SECTION A');
+    });
+  });
 });
