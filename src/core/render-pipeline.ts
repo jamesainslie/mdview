@@ -129,6 +129,17 @@ export class RenderPipeline {
         return;
       }
 
+      // Preprocess: Strip existing TOC if custom TOC is enabled
+      let processedMarkdown = markdown;
+      if ((preferences as { showToc?: boolean }).showToc) {
+        const { stripTableOfContents } = await import('../utils/toc-stripper');
+        const stripResult = stripTableOfContents(markdown);
+        processedMarkdown = stripResult.markdown;
+        if (stripResult.tocFound) {
+          debug.info('RenderPipeline', 'Stripped original TOC from markdown');
+        }
+      }
+
       // Stage 1: Parse markdown to HTML (with worker if available)
       this.notifyProgressThrottled({
         stage: 'parsing',
@@ -142,7 +153,7 @@ export class RenderPipeline {
         try {
           const taskId = `parse-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           const payload: ParseTaskPayload = {
-            markdown,
+            markdown: processedMarkdown,
             options: {
               breaks: true,
               linkify: true,
@@ -170,10 +181,10 @@ export class RenderPipeline {
           debug.debug('RenderPipeline', 'Parsed markdown in worker');
         } catch (error) {
           debug.error('RenderPipeline', 'Worker parsing failed, falling back to sync:', error);
-          result = this.converter.convert(markdown);
+          result = this.converter.convert(processedMarkdown);
         }
       } else {
-        result = this.converter.convert(markdown);
+        result = this.converter.convert(processedMarkdown);
       }
 
       if (this.cancelRequested) return;
@@ -522,8 +533,19 @@ export class RenderPipeline {
       enableHtml: !!(preferences as { enableHtml?: boolean }).enableHtml,
     });
 
+    // Preprocess: Strip existing TOC if custom TOC is enabled
+    let processedMarkdown = markdown;
+    if ((preferences as { showToc?: boolean }).showToc) {
+      const { stripTableOfContents } = await import('../utils/toc-stripper');
+      const stripResult = stripTableOfContents(markdown);
+      processedMarkdown = stripResult.markdown;
+      if (stripResult.tocFound) {
+        debug.info('RenderPipeline', 'Stripped original TOC from markdown (progressive hydration)');
+      }
+    }
+
     // Split markdown into sections
-    const sections = splitIntoSections(markdown);
+    const sections = splitIntoSections(processedMarkdown);
     debug.info('RenderPipeline', `Progressive hydration: ${sections.length} sections`);
 
     // ===================================================================
