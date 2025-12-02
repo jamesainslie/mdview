@@ -1,35 +1,3 @@
-## [Unreleased]
-
-### Features
-
-* **export:** add document export to Word (DOCX) and PDF formats
-  - Export rendered markdown to properly formatted Word documents
-  - PDF export via browser print dialog with enhanced print styles
-  - Mermaid diagrams embedded as scalable vector graphics (SVG) for crisp rendering
-  - Configurable export settings (format, page size, filename template)
-  - Table of contents inclusion option
-  - Progress indicator during export
-  - Export settings page in Options
-
-* **export:** native SVG embedding for Mermaid diagrams in DOCX
-  - Diagrams render as vector graphics, maintaining quality at any zoom level
-  - Automatic style inlining for Word compatibility (computed CSS styles baked into SVG)
-  - foreignObject to native SVG text conversion for reliable label rendering
-  - stroke-dasharray fix for proper line/arrow visibility in Word
-  - PNG fallback for older Word versions (pre-2016)
-  - Uses forked docx library (@jamesainslie/docx) with SVG support
-
-### Documentation
-
-* **readme:** add comprehensive export feature documentation
-* **readme:** document SVG embedding and Word compatibility requirements
-* **options:** add Export settings section to options page
-
-### Dependencies
-
-* **docx:** switch to @jamesainslie/docx fork with native SVG image support
-* **svg2png-wasm:** removed (no longer needed with native SVG embedding)
-
 # [0.2.0](https://github.com/jamesainslie/mdview/compare/v0.1.2...v0.2.0) (2025-11-28)
 
 
