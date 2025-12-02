@@ -1,17 +1,3 @@
-# [0.2.0](https://github.com/jamesainslie/mdview/compare/v0.1.2...v0.2.0) (2025-11-28)
-
-
-### Bug Fixes
-
-* **file-scanner:** add context invalidation detection with debug logging ([9084947](https://github.com/jamesainslie/mdview/commit/9084947484b74f1b984cf156112aafb35ae63c92))
-* **section-splitter:** track code fence state to prevent false heading detection ([325a868](https://github.com/jamesainslie/mdview/commit/325a868b7accf076333dd837ff18ac40b0d5d8f4))
-* **tests:** correct synchronous error mock in render pipeline test ([e997517](https://github.com/jamesainslie/mdview/commit/e99751786160ac995938658f666f7d42dda0bcdb))
-
-
-### Features
-
-* **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
-
 ## [0.3.1](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.0...mdview-v0.3.1) (2025-12-02)
 
 
