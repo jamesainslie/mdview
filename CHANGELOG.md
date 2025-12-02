@@ -12,6 +12,13 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.3.1](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.0...mdview-v0.3.1) (2025-12-02)
+
+
+### Documentation
+
+* **changelog:** remove manual unreleased section ([eaf770f](https://github.com/jamesainslie/mdview/commit/eaf770f71be1d6696e040f34f288da47469a246f))
+
 ## [0.3.0](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.8...mdview-v0.3.0) (2025-12-02)
 
 
