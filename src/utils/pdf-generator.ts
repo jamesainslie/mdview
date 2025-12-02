@@ -131,7 +131,7 @@ export class PDFGenerator {
     debug.info('PDFGenerator', `Found ${svgs.length} SVGs to convert`);
 
     if (svgs.length === 0) {
-      return;
+      return Promise.resolve();
     }
 
     const total = svgs.length;
@@ -182,7 +182,7 @@ export class PDFGenerator {
       const reservedSpace = 40;
       const availableWidth = maxContentWidth - reservedSpace;
       const availableHeight = maxContentHeight - reservedSpace;
-      
+
       const scaleToWidth = availableWidth / naturalWidth;
       const scaleToHeight = availableHeight / naturalHeight;
       const scaleFactor = Math.min(1, scaleToWidth, scaleToHeight);
@@ -235,7 +235,12 @@ export class PDFGenerator {
       this.reportProgress(onProgress, 'converting', Math.min(progress, 80), message);
     }
 
-    debug.info('PDFGenerator', `Prepared ${this.replacedImages.length} SVGs for print (scaled SVGs)`);
+    debug.info(
+      'PDFGenerator',
+      `Prepared ${this.replacedImages.length} SVGs for print (scaled SVGs)`
+    );
+
+    return Promise.resolve();
   }
 
   /**
