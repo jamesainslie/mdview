@@ -35,6 +35,7 @@
 - **Lazy Loading**: Images, code highlighting, and Mermaid diagrams load on-demand
 - **Copy Code Blocks**: One-click copy button for all code blocks
 - **Export Diagrams**: Export Mermaid diagrams as SVG files
+- **Document Export**: Export to Word (.docx) and PDF formats with Mermaid diagrams as embedded graphics
 - **Keyboard Shortcuts**: Navigate and interact without mouse
 - **Multi-Tab Sync**: Sync theme and settings across all markdown tabs
 - **Responsive Design**: Works on all screen sizes
@@ -107,6 +108,39 @@ To view local markdown files:
 - **Maximize**: Click maximize button or press `m`
 - **Export SVG**: Click export button or press `e`
 - **Close Maximize**: Click X or press `Esc`
+
+### Exporting Documents
+MDView allows you to export rendered markdown documents to Word (DOCX) and PDF formats.
+
+#### Export Options
+- **Word Document (.docx)**: Creates a properly formatted Word document with embedded diagrams
+- **PDF / Print**: Opens the browser print dialog for saving as PDF
+
+#### How to Export
+1. Click the export button (download icon) next to the TOC toggle
+2. Select your desired format from the dropdown menu
+3. Optionally adjust page size and table of contents options
+4. Click the format button to start export
+
+#### Export Features
+- **Mermaid Diagrams**: Embedded as scalable vector graphics (SVG) for crisp rendering at any zoom level
+- **Code Blocks**: Preserved with monospace formatting
+- **Tables**: Exported with proper borders and headers
+- **Links**: External URLs shown in printed/PDF output
+- **Word Compatibility**: SVG diagrams include automatic style inlining for reliable rendering in Word 2016+
+
+#### Customizing Export Settings
+Access export preferences via Options page (right-click icon → Options → Export):
+- Default export format
+- Default page size (A4 or Letter)
+- Include table of contents
+- Filename template with variables ({title}, {date}, etc.)
+
+#### Known Limitations
+- Syntax highlighting colors are not preserved in DOCX (uses monospace font)
+- Complex nested lists may have simplified formatting
+- Very large documents (>5MB) may take longer to export
+- SVG diagrams require Microsoft Word 2016 or later (older versions may show placeholder images)
 
 ### Keyboard Shortcuts
 - `+`/`=`: Zoom in
@@ -212,7 +246,8 @@ make check
 - **Build**: Vite 5.x + TypeScript 5.3+
 - **Markdown**: markdown-it v14.x + plugins
 - **Syntax Highlighting**: Highlight.js v11.x
-- **Diagrams**: Mermaid.js v10.x + Panzoom v9.x
+- **Diagrams**: Mermaid.js v11.x + Panzoom v9.x
+- **Document Export**: @jamesainslie/docx (fork with SVG support)
 - **Security**: DOMPurify v3.x
 - **Testing**: Vitest + Playwright
 
@@ -245,6 +280,12 @@ Access full settings via Options page (right-click icon → Options):
 - Default zoom level
 - Animations toggle
 - Render timeout
+
+**Export**
+- Default format (DOCX/PDF)
+- Page size (A4/Letter)
+- Include table of contents
+- Filename template
 
 **Performance**
 - Auto-reload on file change
@@ -327,6 +368,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 - [Mermaid.js](https://mermaid.js.org/)
 - [DOMPurify](https://github.com/cure53/DOMPurify)
 - [Catppuccin](https://github.com/catppuccin/catppuccin)
+- [docx](https://github.com/dolanmiu/docx) (upstream library for DOCX generation)
 
 ## Support
 - **Issues**: [GitHub Issues](https://github.com/jamesainslie/mdview/issues)
