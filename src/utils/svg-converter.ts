@@ -22,10 +22,10 @@ export class SVGConverter {
    * Convert a single SVG element to an embeddable image.
    * Returns the SVG as a base64-encoded string with format 'svg'.
    */
-  async convert(svg: SVGElement, _options: SVGConversionOptions = {}): Promise<ConvertedImage> {
+  convert(svg: SVGElement, _options: SVGConversionOptions = {}): ConvertedImage {
     // Prefer the Mermaid container ID so that it matches ContentCollector's
     // mermaid node IDs (e.g. "mermaid-xyz"), falling back to the SVG ID.
-    const container = svg.closest('.mermaid-container') as HTMLElement | null;
+    const container = svg.closest<HTMLElement>('.mermaid-container');
     const id = container?.id || svg.id || `svg-${Date.now()}`;
 
     debug.info('SVGConverter', `Extracting SVG ${id} as vector image`);
@@ -536,14 +536,14 @@ export class SVGConverter {
   /**
    * Convert multiple SVGs in batch
    */
-  async convertAll(svgs: SVGElement[]): Promise<Map<string, ConvertedImage>> {
+  convertAll(svgs: SVGElement[]): Map<string, ConvertedImage> {
     debug.info('SVGConverter', `Extracting ${svgs.length} SVGs`);
 
     const results = new Map<string, ConvertedImage>();
 
     for (const svg of svgs) {
       try {
-        const image = await this.convert(svg);
+        const image = this.convert(svg);
         results.set(image.id, image);
       } catch (error) {
         debug.error('SVGConverter', `Failed to extract SVG ${svg.id}:`, error);

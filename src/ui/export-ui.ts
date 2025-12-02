@@ -208,7 +208,9 @@ export class ExportUI {
     button.appendChild(iconSpan);
     button.appendChild(contentSpan);
 
-    const clickHandler = () => this.handleExport(format);
+    const clickHandler = () => {
+      void this.handleExport(format);
+    };
     button.addEventListener('click', clickHandler);
     this.boundHandlers.set(`format-${format}`, clickHandler);
 
@@ -289,8 +291,8 @@ export class ExportUI {
     if (!this.menu) return;
 
     const items = Array.from(
-      this.menu.querySelectorAll('.mdview-export-menu-item')
-    ) as HTMLElement[];
+      this.menu.querySelectorAll<HTMLElement>('.mdview-export-menu-item')
+    );
 
     if (items.length === 0) return;
 
@@ -646,9 +648,20 @@ export class ExportUI {
    * Load export preferences from storage
    */
   private async loadPreferences(): Promise<void> {
+    interface StateResponse {
+      state?: {
+        preferences?: {
+          exportDefaultFormat?: ExportFormat;
+          exportDefaultPageSize?: PaperSize;
+          exportIncludeToc?: boolean;
+          exportFilenameTemplate?: string;
+        };
+      };
+    }
+
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
-      const state = response?.state as any;
+      const response: StateResponse = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
+      const state = response?.state;
 
       if (state?.preferences) {
         const { exportDefaultFormat, exportDefaultPageSize, exportIncludeToc, exportFilenameTemplate } =

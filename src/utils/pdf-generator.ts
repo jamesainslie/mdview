@@ -119,7 +119,7 @@ export class PDFGenerator {
    * Convert SVGs to images for print compatibility
    * Scales diagrams based on target page size to avoid squashing.
    */
-  private async prepareSvgsForPrint(
+  private prepareSvgsForPrint(
     container: HTMLElement,
     options: PDFGeneratorOptions,
     onProgress?: ProgressCallback,

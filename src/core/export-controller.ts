@@ -51,9 +51,10 @@ export class ExportController {
       // Stage 2: Convert SVGs (20-50%)
       report('converting', 25, 'Converting diagrams...');
       const converter = new SVGConverter();
-      const svgs = Array.from(container.querySelectorAll('.mermaid-container svg')) as SVGElement[];
+      const svgNodeList = container.querySelectorAll<SVGElement>('.mermaid-container svg');
+      const svgs = Array.from(svgNodeList);
 
-      const images = await converter.convertAll(svgs);
+      const images = converter.convertAll(svgs);
       report('converting', 50, `Converted ${images.size} diagrams`);
 
       debug.info('ExportController', `Converted ${images.size} SVG diagrams`);

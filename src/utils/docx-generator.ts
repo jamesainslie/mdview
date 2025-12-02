@@ -343,7 +343,7 @@ export class DOCXGenerator {
     const children: (TextRun | ExternalHyperlink)[] = [];
 
     // Pattern to match: **bold**, *italic*, `code`, [text](url), or plain text
-    const pattern = /(\*\*[^*]+\*\*)|(\*[^*]+\*)|(`[^`]+`)|(\[[^\]]+\]\([^)]+\))|([^*`\[]+)/g;
+    const pattern = /(\*\*[^*]+\*\*)|(\*[^*]+\*)|(`[^`]+`)|(\[[^\]]+]\([^)]+\))|([^*`[]+)/g;
 
     let match;
     while ((match = pattern.exec(text)) !== null) {
@@ -392,7 +392,6 @@ export class DOCXGenerator {
     const ordered = node.attributes.ordered === true;
 
     if (Array.isArray(node.content)) {
-      let itemNumber = 1;
       for (const item of node.content) {
         if (item.type === 'paragraph') {
           const text = typeof item.content === 'string' ? item.content : '';
@@ -415,8 +414,6 @@ export class DOCXGenerator {
               }
             }
           }
-
-          itemNumber++;
         }
       }
     }
@@ -448,7 +445,9 @@ export class DOCXGenerator {
    * Convert table node - Pandoc style: header with bottom border only
    */
   private convertTable(node: ContentNode): Table {
-    const rowsData: string[][] = JSON.parse(typeof node.content === 'string' ? node.content : '[]');
+    const rowsData = JSON.parse(
+      typeof node.content === 'string' ? node.content : '[]'
+    ) as string[][];
 
     const rows = rowsData.map(
       (rowData, rowIndex) =>
