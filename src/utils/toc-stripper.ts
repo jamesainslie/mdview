@@ -143,3 +143,4 @@ export function stripTableOfContents(markdown: string): TocStripResult {
     tocRange: tocRanges[0], // Return first TOC range for reference
   };
 }
+
