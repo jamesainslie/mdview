@@ -53,6 +53,8 @@ export interface AppState {
     exportDefaultPageSize?: PaperSize;
     exportIncludeToc?: boolean;
     exportFilenameTemplate?: string; // e.g., "{title}-{date}"
+    // Site blocklist - URLs/patterns where MDView should not render
+    blockedSites?: string[]; // e.g., ["github.com", "*.gitlab.com/*/blob/*"]
   };
   document: {
     path: string;
