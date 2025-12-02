@@ -67,6 +67,15 @@ class MDViewContentScript {
       debug.debug('MDView', `Document ready state: ${document.readyState}`);
       debug.debug('MDView', `Debug mode enabled: ${this.state?.preferences.debug}`);
       debug.debug('MDView', `Auto-reload enabled: ${this.state?.preferences.autoReload}`);
+
+      // Check if this site is in the blocklist
+      const blockedSites = this.state?.preferences.blockedSites || [];
+      if (FileScanner.isSiteBlocked(blockedSites)) {
+        debug.info('MDView', 'Site is in blocklist, skipping rendering');
+        console.log('[MDView] Site blocked by user preference, skipping initialization');
+        return;
+      }
+
       debug.info('MDView', 'Content script initializing...');
       debug.info('MDView', 'Markdown file detected:', FileScanner.getFilePath());
 
