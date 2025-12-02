@@ -19,7 +19,8 @@ export type ThemeName =
   | 'catppuccin-macchiato'
   | 'catppuccin-mocha'
   | 'monokai'
-  | 'monokai-pro';
+  | 'monokai-pro'
+  | 'test-theme'; // For testing
 
 export type LogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
 
@@ -47,6 +48,11 @@ export interface AppState {
     tocMaxDepth?: number; // Max heading depth (1-6)
     tocAutoCollapse?: boolean; // Auto-collapse nested sections
     tocPosition?: 'left' | 'right'; // Position of TOC
+    // Export settings
+    exportDefaultFormat?: 'docx' | 'pdf';
+    exportDefaultPageSize?: PaperSize;
+    exportIncludeToc?: boolean;
+    exportFilenameTemplate?: string; // e.g., "{title}-{date}"
   };
   document: {
     path: string;
@@ -291,3 +297,179 @@ export interface MermaidTaskResult {
   svg: string;
   id: string;
 }
+
+// Export feature types
+
+/**
+ * Supported export formats
+ */
+export type ExportFormat = 'docx' | 'pdf';
+
+/**
+ * Standard paper sizes for PDF export
+ * ISO A-series: A0, A1, A3, A4, A5, A6
+ * North American: Letter, Legal, Tabloid, Executive
+ */
+export type PaperSize =
+  | 'A0'
+  | 'A1'
+  | 'A3'
+  | 'A4'
+  | 'A5'
+  | 'A6'
+  | 'Letter'
+  | 'Legal'
+  | 'Tabloid'
+  | 'Executive';
+
+/**
+ * Content node types for export
+ */
+export type ContentNodeType =
+  | 'heading'
+  | 'paragraph'
+  | 'list'
+  | 'code'
+  | 'table'
+  | 'image'
+  | 'mermaid'
+  | 'blockquote'
+  | 'hr';
+
+/**
+ * Structured content node for export
+ */
+export interface ContentNode {
+  type: ContentNodeType;
+  content: string | ContentNode[];
+  attributes: {
+    level?: number; // For headings (1-6)
+    language?: string; // For code blocks
+    ordered?: boolean; // For lists
+    id?: string; // For headings, images, mermaid
+    src?: string; // For images
+    alt?: string; // For images
+    [key: string]: unknown;
+  };
+  children?: ContentNode[];
+}
+
+/**
+ * Collected content from rendered markdown
+ */
+export interface CollectedContent {
+  title: string;
+  nodes: ContentNode[];
+  metadata: {
+    wordCount: number;
+    imageCount: number;
+    mermaidCount: number;
+    exportedAt: Date;
+  };
+}
+
+/**
+ * SVG conversion options
+ */
+export interface SVGConversionOptions {
+  scale?: number; // Default: 2 (retina) - only used for raster formats
+  format?: 'png' | 'jpeg' | 'svg'; // 'svg' preserves vector format
+  quality?: number; // JPEG quality 0-1
+  backgroundColor?: string;
+}
+
+/**
+ * Converted image data
+ */
+export interface ConvertedImage {
+  id: string;
+  data: string; // base64 encoded
+  width: number;
+  height: number;
+  format: string;
+}
+
+/**
+ * Export options
+ */
+export interface ExportOptions {
+  format: ExportFormat;
+  filename?: string;
+  includeImages?: boolean;
+  includeMermaid?: boolean;
+}
+
+/**
+ * Export progress information
+ */
+export interface ExportProgress {
+  stage: 'collecting' | 'converting' | 'generating' | 'downloading';
+  progress: number; // 0-100
+  message: string;
+}
+
+/**
+ * Progress callback function
+ */
+export type ProgressCallback = (progress: ExportProgress) => void;
+
+/**
+ * DOCX Generator options
+ */
+export interface DOCXGeneratorOptions {
+  title?: string;
+  author?: string;
+  includeTableOfContents?: boolean;
+  pageSize?: PaperSize;
+  margins?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
+}
+
+/**
+ * Export UI Options
+ */
+export interface ExportUIOptions {
+  position?: 'left' | 'right';
+  formats?: ExportFormat[];
+  defaultPageSize?: PaperSize;
+  defaultFormat?: ExportFormat;
+  includeTableOfContents?: boolean;
+  filenameTemplate?: string;
+}
+
+/**
+ * Export UI State
+ */
+export interface ExportUIState {
+  isMenuOpen: boolean;
+  isExporting: boolean;
+  currentProgress: ExportProgress | null;
+  lastError: Error | null;
+}
+
+/**
+ * PDF Generator options
+ */
+export interface PDFGeneratorOptions {
+  paperSize?: PaperSize;
+  orientation?: 'portrait' | 'landscape';
+  margins?: string; // CSS margin value
+  convertSvgsToImages?: boolean;
+  pageBreakBeforeHeadings?: boolean;
+}
+
+/**
+ * Filename template variables
+ */
+export type FilenameTemplateVar =
+  | '{title}' // Document title
+  | '{date}' // YYYY-MM-DD
+  | '{datetime}' // YYYY-MM-DD_HH-mm
+  | '{timestamp}' // Unix timestamp
+  | '{year}' // YYYY
+  | '{month}' // MM
+  | '{day}'; // DD
