@@ -44,6 +44,23 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.3.0](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.8...mdview-v0.3.0) (2025-12-02)
+
+
+### chore
+
+* **release:** release 0.3.0 ([1fa50b4](https://github.com/jamesainslie/mdview/commit/1fa50b4e364ecb4c77f15396340df7565384f4b8))
+
+
+### Features
+
+* **export:** add document export to DOCX and PDF with SVG diagrams ([198719e](https://github.com/jamesainslie/mdview/commit/198719ee063cda9f14451a30aa9e00a5f380abd6))
+
+
+### Bug Fixes
+
+* **lint:** resolve eslint errors in export modules ([197c628](https://github.com/jamesainslie/mdview/commit/197c628c6809937308c2c0ed9f9e8f92531fab53))
+
 ## [0.2.8](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.7...mdview-v0.2.8) (2025-12-01)
 
 
