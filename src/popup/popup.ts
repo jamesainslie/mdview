@@ -235,6 +235,22 @@ class PopupManager {
       });
     }
 
+    // Reload extension (reload current tab) button
+    const btnReload = document.getElementById('btn-reload-extension');
+    if (btnReload) {
+      btnReload.addEventListener('click', () => {
+        debug.log('Popup', 'Reload Extension button clicked - reloading active tab');
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        void (async () => {
+          try {
+            await chrome.tabs.reload();
+          } catch (error) {
+            debug.error('Popup', 'Failed to reload tab from Reload Extension button:', error);
+          }
+        })();
+      });
+    }
+
     // Help button
     const btnHelp = document.getElementById('btn-help');
     if (btnHelp) {

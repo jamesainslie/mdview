@@ -8,6 +8,7 @@ import { FileScanner } from '../utils/file-scanner';
 import type { AppState } from '../types';
 import { debug } from '../utils/debug-logger';
 import { TocRenderer } from '../ui/toc-renderer';
+import type { ExportUI } from '../ui/export-ui';
 
 // Fix Vite's dynamic import base path for Chrome extensions
 // Override import.meta to use chrome-extension:// base URL
@@ -38,6 +39,7 @@ class MDViewContentScript {
   private autoReloadCleanup: (() => void) | null = null;
   private state: AppState | null = null;
   private tocRenderer: TocRenderer | null = null;
+  private exportUI: ExportUI | null = null;
 
   async initialize(): Promise<void> {
     // Prevent running in iframes (used for file watching)
@@ -230,6 +232,12 @@ class MDViewContentScript {
         if (headings.length > 0) {
           this.setupToc(headings, this.state.preferences);
         }
+      }
+
+      // Setup Export UI
+      if (this.state) {
+        debug.info('MDView', 'Setting up Export UI...');
+        await this.setupExportUI();
       }
 
       // Set up auto-reload if enabled (after initial render completes)
@@ -688,6 +696,38 @@ class MDViewContentScript {
   }
 
   /**
+   * Setup Export UI
+   */
+  private async setupExportUI(): Promise<void> {
+    try {
+      debug.info('MDView', 'Setting up Export UI...');
+
+      // Clean up existing Export UI if any
+      if (this.exportUI) {
+        this.exportUI.destroy();
+      }
+
+      // Dynamically import ExportUI
+      const { ExportUI } = await import('../ui/export-ui');
+
+      // Create new ExportUI instance
+      this.exportUI = new ExportUI({
+        position: this.state?.preferences.tocPosition || 'left',
+        formats: ['docx', 'pdf'],
+        defaultPageSize: 'A4',
+      });
+
+      // Create and append export button
+      const exportButton = this.exportUI.createExportButton();
+      document.body.appendChild(exportButton);
+
+      debug.info('MDView', 'Export UI setup complete');
+    } catch (error) {
+      debug.error('MDView', 'Failed to setup Export UI:', error);
+    }
+  }
+
+  /**
    * Handle preference changes
    */
   private async handlePreferenceChange(
@@ -719,6 +759,11 @@ class MDViewContentScript {
     if (this.tocRenderer) {
       this.tocRenderer.destroy();
       this.tocRenderer = null;
+    }
+
+    if (this.exportUI) {
+      this.exportUI.destroy();
+      this.exportUI = null;
     }
   }
 }

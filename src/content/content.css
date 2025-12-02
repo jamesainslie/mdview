@@ -876,29 +876,223 @@ img[loading="lazy"].loaded {
   vertical-align: text-bottom;
 }
 
-/* Print styles */
+/* ============================================
+   Enhanced Print Styles
+   ============================================ */
 @media print {
-  body {
-    background: white;
-    color: black;
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 2cm;
   }
 
+  /* Preserve theme colors in print */
+  body {
+    background: var(--md-bg) !important;
+    color: var(--md-fg) !important;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  /* Container */
   #mdview-container {
-    max-width: 100%;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Headings - avoid orphaned headings */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+    color: var(--md-heading) !important;
+  }
+
+  h1 {
+    font-size: 24pt;
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 18pt;
+    page-break-before: auto;
+  }
+  h3 {
+    font-size: 14pt;
+  }
+  h4,
+  h5,
+  h6 {
+    font-size: 12pt;
+  }
+
+  /* Keep headings with following content */
+  h1 + *,
+  h2 + *,
+  h3 + *,
+  h4 + *,
+  h5 + *,
+  h6 + * {
+    page-break-before: avoid;
+    break-before: avoid;
+  }
+
+  /* Paragraphs */
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Code blocks */
+  pre {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: 1px solid var(--md-border) !important;
+    background: var(--md-code-bg) !important;
+    color: var(--md-code-text) !important;
+    padding: 12pt !important;
+    font-size: 9pt;
+    line-height: 1.3;
+    overflow-x: visible !important;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  code {
+    background: var(--md-code-bg) !important;
+    border: 1px solid var(--md-border) !important;
+    color: var(--md-code-text) !important;
+    padding: 1pt 3pt;
+    font-size: 9pt;
+  }
+
+  pre code {
+    border: none !important;
     padding: 0;
   }
 
-  .mermaid-controls {
-    display: none !important;
+  /* Tables */
+  table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 10pt;
   }
 
+  thead {
+    display: table-header-group; /* Repeat headers */
+  }
+
+  th,
+  td {
+    border: 1px solid var(--md-border) !important;
+    padding: 6pt;
+    text-align: left;
+  }
+
+  th {
+    background: var(--md-code-bg) !important;
+    font-weight: bold;
+  }
+
+  /* Images and Mermaid diagrams */
+  img,
+  .mermaid-container {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Print images for diagrams - explicit sizing set by PDFGenerator */
+  .mdview-print-image {
+    display: block !important;
+    margin: 12pt auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    /* Width/height/max-width/max-height set inline by PDFGenerator */
+  }
+
+  /* Large images get their own page */
+  img[height]:not([height='0']) {
+    page-break-before: auto;
+  }
+
+  /* Blockquotes */
+  blockquote {
+    border-left: 3pt solid var(--md-border) !important;
+    padding-left: 12pt;
+    margin-left: 0;
+    color: var(--md-fg) !important;
+    page-break-inside: avoid;
+  }
+
+  /* Lists */
+  ul,
+  ol {
+    page-break-inside: avoid;
+  }
+
+  li {
+    page-break-inside: avoid;
+  }
+
+  /* Links - keep theme colors */
   a {
-    color: inherit;
+    color: var(--md-link) !important;
     text-decoration: underline;
   }
 
-  pre, code {
-    border: 1px solid #ccc;
+  a[href^='http']:after {
+    content: ' (' attr(href) ')';
+    font-size: 9pt;
+    color: var(--md-fg-muted, #666666);
+  }
+
+  /* Hide internal links URL */
+  a[href^='#']:after {
+    content: '';
+  }
+
+  /* Horizontal rules */
+  hr {
+    border: none;
+    border-top: 1pt solid var(--md-border);
+    margin: 12pt 0;
+  }
+
+  /* Hide all UI elements */
+  .mdview-toc-overlay,
+  .mdview-toc-toggle-btn,
+  .mdview-export-btn,
+  .mdview-export-menu,
+  .mdview-export-progress-overlay,
+  .mdview-export-toast,
+  .mermaid-controls,
+  .mermaid-original-code,
+  #mdview-progress-indicator,
+  #mdview-loading-overlay {
+    display: none !important;
+  }
+
+  /* Page break classes */
+  .page-break-before {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .no-page-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }
 
@@ -1162,5 +1356,377 @@ body.toc-visible-right .mdview-toc-toggle-btn.position-right {
   /* Hide TOC on narrow screens */
   .mdview-toc-overlay {
     display: none;
+  }
+}
+
+/* ============================================
+   Export UI Styles
+   ============================================ */
+
+/* === Export Button === */
+.mdview-export-btn {
+  position: fixed;
+  top: 16px;
+  z-index: 1000;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--md-fg);
+  opacity: 0.4;
+  cursor: pointer;
+  transition: opacity 0.2s, background-color 0.2s, border-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mdview-export-btn.position-left {
+  left: 56px; /* 16px + 32px TOC + 8px gap */
+}
+
+.mdview-export-btn.position-right {
+  right: 56px;
+}
+
+/* Shift export button when TOC is visible */
+body.toc-visible-left .mdview-export-btn.position-left {
+  left: 336px; /* 296px (TOC button position) + 32px + 8px gap */
+}
+
+body.toc-visible-right .mdview-export-btn.position-right {
+  right: 336px;
+}
+
+.mdview-export-btn:hover {
+  opacity: 1;
+  background: var(--md-code-bg);
+  border-color: var(--md-border);
+}
+
+.mdview-export-btn.menu-open,
+.mdview-export-btn:active {
+  opacity: 1;
+  background: var(--md-code-bg);
+  border-color: var(--md-link);
+}
+
+.mdview-export-btn.exporting {
+  opacity: 1;
+  pointer-events: none;
+}
+
+.mdview-export-btn.exporting svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* === Export Menu === */
+.mdview-export-menu {
+  position: fixed;
+  top: 50px;
+  width: 280px;
+  max-height: 400px;
+  background: var(--md-bg);
+  border: 1px solid var(--md-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--md-shadow);
+  z-index: 1001;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.95);
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+  overflow: hidden;
+}
+
+.mdview-export-menu.position-left {
+  left: 10px;
+}
+
+.mdview-export-menu.position-right {
+  right: 10px;
+}
+
+.mdview-export-menu.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* === Menu Header === */
+.mdview-export-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--md-border);
+  font-weight: 600;
+  color: var(--md-fg);
+}
+
+.mdview-export-menu-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--md-fg);
+  opacity: 0.6;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.mdview-export-menu-close:hover {
+  opacity: 1;
+  background: var(--md-code-bg);
+}
+
+/* === Menu Items === */
+.mdview-export-menu-section {
+  padding: 8px;
+}
+
+.mdview-export-menu-label {
+  display: block;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--md-fg);
+  opacity: 0.5;
+}
+
+.mdview-export-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.mdview-export-menu-item:hover {
+  background: var(--md-code-bg);
+}
+
+.mdview-export-menu-item:focus {
+  outline: 2px solid var(--md-link);
+  outline-offset: -2px;
+}
+
+.mdview-export-menu-item-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--md-code-bg);
+  font-weight: 700;
+  color: var(--md-link);
+  flex-shrink: 0;
+}
+
+.mdview-export-menu-item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mdview-export-menu-item-title {
+  display: block;
+  font-weight: 500;
+  color: var(--md-fg);
+  font-size: 14px;
+}
+
+.mdview-export-menu-item-desc {
+  display: block;
+  font-size: 12px;
+  color: var(--md-fg);
+  opacity: 0.6;
+}
+
+.mdview-export-menu-divider {
+  height: 1px;
+  background: var(--md-border);
+  margin: 8px 0;
+}
+
+/* === Options === */
+.mdview-export-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--md-fg);
+}
+
+.mdview-export-option input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.mdview-export-option label {
+  cursor: pointer;
+  color: var(--md-fg);
+}
+
+.mdview-export-option select {
+  padding: 4px 8px;
+  border: 1px solid var(--md-border);
+  border-radius: 4px;
+  background: var(--md-bg);
+  color: var(--md-fg);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* === Progress Overlay === */
+.mdview-export-progress-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.mdview-export-progress-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mdview-export-progress-container {
+  background: var(--md-bg);
+  padding: 24px 32px;
+  border-radius: 12px;
+  min-width: 300px;
+  text-align: center;
+  box-shadow: 0 8px 24px var(--md-shadow);
+}
+
+.mdview-export-progress-bar {
+  height: 8px;
+  background: var(--md-code-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.mdview-export-progress-fill {
+  height: 100%;
+  background: var(--md-link);
+  transition: width 0.2s ease-out;
+}
+
+.mdview-export-progress-text {
+  margin-bottom: 16px;
+  color: var(--md-fg);
+  font-size: 14px;
+}
+
+.mdview-export-progress-cancel {
+  padding: 8px 16px;
+  border: 1px solid var(--md-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--md-fg);
+  font-size: 14px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.mdview-export-progress-cancel:hover {
+  background: var(--md-code-bg);
+  border-color: var(--md-link);
+}
+
+/* === Toast === */
+.mdview-export-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+  z-index: 3000;
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+  box-shadow: 0 4px 12px var(--md-shadow);
+}
+
+.mdview-export-toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.mdview-export-toast.success {
+  background: var(--md-success);
+}
+
+.mdview-export-toast.error {
+  background: var(--md-error);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .mdview-export-menu {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 60vh;
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+  }
+
+  .mdview-export-menu.visible {
+    transform: translateY(0);
+  }
+
+  .mdview-export-btn {
+    display: none; /* Hide on mobile for now */
+  }
+}
+
+/* === Print === */
+@media print {
+  .mdview-export-btn,
+  .mdview-export-menu,
+  .mdview-export-progress-overlay,
+  .mdview-export-toast {
+    display: none !important;
   }
 }

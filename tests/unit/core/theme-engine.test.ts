@@ -4,7 +4,6 @@
 
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest';
 import { ThemeEngine } from '../../../src/core/theme-engine';
-import type { Theme } from '../../../src/types';
 import { mockTheme } from '../../helpers/fixtures';
 import { mockChromeStorage } from '../../helpers/mocks';
 import { mockConsole } from '../../helpers/test-utils';

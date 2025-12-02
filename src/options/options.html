@@ -19,6 +19,7 @@
             <button class="nav-item active" data-section="appearance">Appearance</button>
             <button class="nav-item" data-section="diagrams">Diagrams</button>
             <button class="nav-item" data-section="performance">Performance</button>
+            <button class="nav-item" data-section="export">Export</button>
             <button class="nav-item" data-section="advanced">Advanced</button>
           </nav>
         </aside>
@@ -190,6 +191,66 @@
             <div class="setting-group">
               <label for="lazy-threshold" class="setting-label">Lazy Loading Threshold (KB)</label>
               <input type="number" id="lazy-threshold" class="setting-input" min="50" max="1000" step="50" value="500" />
+            </div>
+          </section>
+
+          <!-- Export Section -->
+          <section id="export" class="settings-section">
+            <h2>Export</h2>
+
+            <div class="setting-group">
+              <label for="export-default-format" class="setting-label">Default Format</label>
+              <select id="export-default-format" class="setting-input">
+                <option value="docx">Word Document (.docx)</option>
+                <option value="pdf">PDF / Print</option>
+              </select>
+              <p class="setting-description">Format to use when exporting documents</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="export-default-page-size" class="setting-label">Default Page Size</label>
+              <select id="export-default-page-size" class="setting-input">
+                <optgroup label="ISO A-Series">
+                  <option value="A0">A0 (841 x 1189 mm)</option>
+                  <option value="A1">A1 (594 x 841 mm)</option>
+                  <option value="A3">A3 (297 x 420 mm)</option>
+                  <option value="A4">A4 (210 x 297 mm)</option>
+                  <option value="A5">A5 (148 x 210 mm)</option>
+                  <option value="A6">A6 (105 x 148 mm)</option>
+                </optgroup>
+                <optgroup label="North American">
+                  <option value="Letter">Letter (8.5 x 11 in)</option>
+                  <option value="Legal">Legal (8.5 x 14 in)</option>
+                  <option value="Tabloid">Tabloid (11 x 17 in)</option>
+                  <option value="Executive">Executive (7.25 x 10.5 in)</option>
+                </optgroup>
+              </select>
+              <p class="setting-description">Page size for exported documents</p>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" id="export-include-toc" class="setting-checkbox" checked />
+                Include Table of Contents
+              </label>
+              <p class="setting-description">Add a table of contents at the beginning of exported documents</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="export-filename-template" class="setting-label">Filename Template</label>
+              <input type="text" id="export-filename-template" class="setting-input" 
+                     placeholder="{title}" value="{title}" />
+              <p class="setting-description">
+                Available variables: <code>{title}</code>, <code>{date}</code>, <code>{datetime}</code>, 
+                <code>{year}</code>, <code>{month}</code>, <code>{day}</code>
+              </p>
+            </div>
+
+            <div class="setting-group">
+              <div class="filename-preview">
+                <span class="preview-label">Preview:</span>
+                <span id="filename-preview-text">document.docx</span>
+              </div>
             </div>
           </section>
 

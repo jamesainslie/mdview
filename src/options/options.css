@@ -161,6 +161,37 @@ body {
   color: #6e7781;
 }
 
+.setting-description code {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #24292f;
+}
+
+/* Filename Preview */
+.filename-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.filename-preview .preview-label {
+  color: #656d76;
+  font-size: 12px;
+}
+
+#filename-preview-text {
+  color: #24292f;
+  font-weight: 500;
+}
+
 /* Buttons */
 .action-button {
   padding: 8px 16px;
