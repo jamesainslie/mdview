@@ -1,6 +1,6 @@
 {
   "name": "mdview",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Beautiful Chrome extension for viewing Markdown files with themes, syntax highlighting, and interactive Mermaid diagrams",
   "type": "module",
   "scripts": {

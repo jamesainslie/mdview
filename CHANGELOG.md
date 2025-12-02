@@ -12,6 +12,19 @@
 
 * **ui:** add log level selector and dynamic version display ([b84cad7](https://github.com/jamesainslie/mdview/commit/b84cad79c6ee742f2d5b3519124ebf087af5dbd2))
 
+## [0.2.8](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.7...mdview-v0.2.8) (2025-12-01)
+
+
+### Features
+
+* **core:** strip original TOC when custom TOC enabled ([9703a40](https://github.com/jamesainslie/mdview/commit/9703a407d14fa33455303ee4f477cdf2c476e982))
+* **core:** strip original TOC when custom TOC enabled ([38f2f55](https://github.com/jamesainslie/mdview/commit/38f2f556261a46a0ea383772fe59ff144877406f))
+
+
+### Tests
+
+* **core:** add edge case tests for TOC stripper ([f0aeb81](https://github.com/jamesainslie/mdview/commit/f0aeb8162372021e38adb9a4d209ca7740131098))
+
 ## [0.2.7](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.6...mdview-v0.2.7) (2025-11-28)
 
 
