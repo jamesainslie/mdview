@@ -5,7 +5,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { MarkdownConverter } from '../../../src/core/markdown-converter';
 import { markdownSamples, expectedHtml } from '../../helpers/fixtures';
-import { assertHtmlMatches, extractTextContent } from '../../helpers/test-utils';
+import { assertHtmlMatches } from '../../helpers/test-utils';
 
 describe('MarkdownConverter', () => {
   let converter: MarkdownConverter;

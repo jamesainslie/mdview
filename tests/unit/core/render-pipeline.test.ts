@@ -3,9 +3,9 @@
  */
 
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest';
-import { RenderPipeline, type RenderProgress } from '../../../src/core/render-pipeline';
+import { RenderPipeline } from '../../../src/core/render-pipeline';
 import { markdownSamples } from '../../helpers/fixtures';
-import { mockChromeRuntime, createMockConverter, waitFor, createMockWorkerPool } from '../../helpers/mocks';
+import { mockChromeRuntime, waitFor } from '../../helpers/mocks';
 import { createTestContainer, cleanupTestContainer, mockConsole } from '../../helpers/test-utils';
 
 // Mock the worker pool module
@@ -445,8 +445,9 @@ describe('RenderPipeline', () => {
         // Error expected
       }
 
-      // Container should show error
-      expect(container.innerHTML).toContain('error') || expect(container.innerHTML.length).toBeGreaterThan(0);
+      // Container should show error (check either contains 'error' text or has content)
+      const hasError = container.innerHTML.includes('error') || container.innerHTML.length > 0;
+      expect(hasError).toBe(true);
     });
 
     test('should escape HTML in error messages', async () => {

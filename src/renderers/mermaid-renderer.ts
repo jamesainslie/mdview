@@ -177,6 +177,22 @@ export class MermaidRenderer {
   }
 
   /**
+   * Force-render all Mermaid diagrams in a container, bypassing lazy loading.
+   * Used by export/print flows where we must have every diagram rendered,
+   * regardless of scroll position.
+   */
+  async renderAllImmediate(container: HTMLElement): Promise<void> {
+    const diagrams = container.querySelectorAll('.mermaid-container');
+
+    for (const diagram of Array.from(diagrams)) {
+      const id = diagram.id;
+      if (id) {
+        await this.renderDiagram(id);
+      }
+    }
+  }
+
+  /**
    * Render a single Mermaid diagram
    */
   async renderDiagram(containerId: string): Promise<void> {
@@ -186,8 +202,9 @@ export class MermaidRenderer {
       return;
     }
 
-    // Check if already rendered
-    if (container.querySelector('.mermaid-rendered')) {
+    // Check if already rendered (either with wrapper or direct SVG from cache)
+    if (container.querySelector('.mermaid-rendered') || container.querySelector('svg')) {
+      debug.debug('MermaidRenderer', `Container ${containerId} already has rendered content`);
       return;
     }
 
@@ -202,11 +219,12 @@ export class MermaidRenderer {
     }
 
     if (!code) {
-      debug.error(
+      // If there's no code and no SVG, this is likely a cache issue where
+      // the mermaid code was never stored. Log as warning, not error.
+      debug.warn(
         'MermaidRenderer',
-        `No code found in registry or data attribute for ${containerId}`
+        `No code found for ${containerId} - diagram may need re-rendering from source`
       );
-      this.showError(container, 'No Mermaid code found');
       return;
     }
 

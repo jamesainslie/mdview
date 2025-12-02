@@ -115,8 +115,16 @@ export class MarkdownConverter {
         }
         window.__MDVIEW_MERMAID_CODE__.set(id, code);
 
-        // Return container without script tag (code retrieved from registry)
-        return `<div class="mermaid-container" id="${id}" data-has-code="true">
+        // Escape the code for safe HTML attribute storage
+        // This allows the code to survive caching and be retrieved later
+        const escapedCode = code
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+
+        // Return container with code stored in data attribute for cache persistence
+        return `<div class="mermaid-container" id="${id}" data-has-code="true" data-mermaid-code="${escapedCode}">
           <div class="mermaid-loading">Rendering diagram...</div>
         </div>\n`;
       }
