@@ -10,6 +10,135 @@ export class FileScanner {
   private static readonly MARKDOWN_MIME_TYPES = ['text/markdown', 'text/x-markdown'];
 
   /**
+   * Check if the current site is in the blocklist.
+   * Supports various pattern formats:
+   * - Domain only: "github.com" (blocks all pages on github.com)
+   * - Wildcard subdomain: "*.github.com" (blocks subdomains)
+   * - Path pattern: "github.com/star/blob/star" (blocks specific paths)
+   * - Full URL pattern: "https://raw.githubusercontent.com/star"
+   *
+   * Note: Use "star" in docs above to avoid JSDoc parsing issues with asterisks.
+   * Actual patterns use * as wildcard.
+   */
+  static isSiteBlocked(blocklist: string[]): boolean {
+    if (!blocklist || blocklist.length === 0) {
+      return false;
+    }
+
+    const url = window.location.href;
+    const hostname = window.location.hostname;
+    const pathname = window.location.pathname;
+
+    for (const pattern of blocklist) {
+      if (this.matchesPattern(pattern, url, hostname, pathname)) {
+        debug.info('FileScanner', `Site blocked by pattern: ${pattern}`);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Match a URL against a blocklist pattern.
+   * Pattern formats:
+   * - "example.com" - matches hostname exactly
+   * - "*.example.com" - matches any subdomain of example.com
+   * - "example.com/path/*" - matches hostname + path pattern
+   * - "https://example.com/*" - matches full URL pattern
+   */
+  private static matchesPattern(
+    pattern: string,
+    url: string,
+    hostname: string,
+    pathname: string
+  ): boolean {
+    // Normalize pattern (trim whitespace)
+    pattern = pattern.trim().toLowerCase();
+
+    if (!pattern) {
+      return false;
+    }
+
+    // Full URL pattern (starts with http:// or https://)
+    if (pattern.startsWith('http://') || pattern.startsWith('https://')) {
+      return this.matchesGlobPattern(pattern, url.toLowerCase());
+    }
+
+    // Check if pattern includes a path
+    const slashIndex = pattern.indexOf('/');
+    if (slashIndex > 0) {
+      // Pattern has path component: "example.com/path/*"
+      const patternHost = pattern.substring(0, slashIndex);
+      const patternPath = pattern.substring(slashIndex);
+
+      if (!this.matchesHostPattern(patternHost, hostname.toLowerCase())) {
+        return false;
+      }
+
+      return this.matchesGlobPattern(patternPath, pathname.toLowerCase());
+    }
+
+    // Domain-only pattern
+    return this.matchesHostPattern(pattern, hostname.toLowerCase());
+  }
+
+  /**
+   * Match hostname against a host pattern.
+   * Supports wildcard subdomain: "*.example.com"
+   */
+  private static matchesHostPattern(pattern: string, hostname: string): boolean {
+    // Exact match
+    if (pattern === hostname) {
+      return true;
+    }
+
+    // Wildcard subdomain: "*.example.com"
+    if (pattern.startsWith('*.')) {
+      const baseDomain = pattern.substring(2); // Remove "*."
+      // Match the base domain itself or any subdomain
+      return hostname === baseDomain || hostname.endsWith('.' + baseDomain);
+    }
+
+    return false;
+  }
+
+  /**
+   * Match a string against a glob pattern with * wildcards.
+   * * matches any sequence of characters (including empty).
+   */
+  private static matchesGlobPattern(pattern: string, str: string): boolean {
+    // Convert glob pattern to regex
+    // Escape regex special chars except *, then convert * to .*
+    const regexPattern = pattern
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
+      .replace(/\*/g, '.*'); // Convert * to .*
+
+    const regex = new RegExp('^' + regexPattern + '$');
+    return regex.test(str);
+  }
+
+  /**
+   * Get the current site identifier for display (hostname or file path).
+   */
+  static getCurrentSiteIdentifier(): string {
+    const url = window.location.href;
+
+    if (url.startsWith('file://')) {
+      // For local files, show a truncated path
+      const path = window.location.pathname;
+      const parts = path.split('/');
+      if (parts.length > 3) {
+        return '.../' + parts.slice(-2).join('/');
+      }
+      return path;
+    }
+
+    // For web, show hostname
+    return window.location.hostname;
+  }
+
+  /**
    * Check if the current page is a markdown file
    */
   static isMarkdownFile(): boolean {
