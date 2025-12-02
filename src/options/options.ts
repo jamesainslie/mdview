@@ -3,7 +3,7 @@
  * Manages settings page UI and interactions
  */
 
-import type { AppState, ThemeName, LogLevel } from '../types';
+import type { AppState, ThemeName, LogLevel, PaperSize } from '../types';
 import { debug } from '../utils/debug-logger';
 
 class OptionsManager {
@@ -114,6 +114,13 @@ class OptionsManager {
     this.setValue('reload-debounce', '300');
     this.setValue('lazy-threshold', '500');
 
+    // Export
+    this.setValue('export-default-format', preferences.exportDefaultFormat || 'docx');
+    this.setValue('export-default-page-size', preferences.exportDefaultPageSize || 'A4');
+    this.setValue('export-include-toc', preferences.exportIncludeToc !== false);
+    this.setValue('export-filename-template', preferences.exportFilenameTemplate || '{title}');
+    this.updateFilenamePreview();
+
     // Advanced
     this.setValue('sync-tabs', preferences.syncTabs);
     this.setValue('log-level', preferences.logLevel || 'error');
@@ -191,6 +198,20 @@ class OptionsManager {
       });
     }
 
+    // Filename preview updates
+    const templateInput = document.getElementById('export-filename-template');
+    const formatSelect = document.getElementById('export-default-format');
+    if (templateInput) {
+      templateInput.addEventListener('input', () => {
+        this.updateFilenamePreview();
+      });
+    }
+    if (formatSelect) {
+      formatSelect.addEventListener('change', () => {
+        this.updateFilenamePreview();
+      });
+    }
+
     // Auto-save on change (optional)
     // Commented out for now, requires user confirmation
   }
@@ -239,6 +260,12 @@ class OptionsManager {
         tocMaxDepth: this.getNumberValue('toc-max-depth') || 6,
         tocAutoCollapse: this.getCheckboxValue('toc-auto-collapse'),
         tocPosition: this.getSelectValue('toc-position') as 'left' | 'right',
+
+        // Export
+        exportDefaultFormat: this.getSelectValue('export-default-format') as 'docx' | 'pdf',
+        exportDefaultPageSize: this.getSelectValue('export-default-page-size') as PaperSize,
+        exportIncludeToc: this.getCheckboxValue('export-include-toc'),
+        exportFilenameTemplate: this.getInputValue('export-filename-template') || '{title}',
 
         autoReload: this.getCheckboxValue('auto-reload'),
         syncTabs: this.getCheckboxValue('sync-tabs'),
@@ -293,6 +320,29 @@ class OptionsManager {
     const btnSave = document.getElementById('btn-save') as HTMLButtonElement;
     if (btnSave) {
       btnSave.disabled = !this.hasChanges;
+    }
+  }
+
+  private updateFilenamePreview(): void {
+    const template = this.getInputValue('export-filename-template') || '{title}';
+    const format = this.getSelectValue('export-default-format') || 'docx';
+
+    const previewEl = document.getElementById('filename-preview-text');
+    if (previewEl) {
+      // Dynamic import to avoid circular dependency
+      import('../utils/filename-generator')
+        .then(({ FilenameGenerator }) => {
+          const preview = FilenameGenerator.generate({
+            title: 'My Document',
+            extension: format,
+            template,
+          });
+          previewEl.textContent = preview;
+        })
+        .catch((error) => {
+          debug.error('Options', 'Failed to generate filename preview:', error);
+          previewEl.textContent = 'preview-error.docx';
+        });
     }
   }
 
@@ -392,6 +442,11 @@ class OptionsManager {
         enableHtml: false,
         syncTabs: false,
         logLevel: 'error',
+        // Export defaults
+        exportDefaultFormat: 'docx',
+        exportDefaultPageSize: 'A4',
+        exportIncludeToc: true,
+        exportFilenameTemplate: '{title}',
       };
 
       await chrome.runtime.sendMessage({
