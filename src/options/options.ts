@@ -124,6 +124,9 @@ class OptionsManager {
     // Advanced
     this.setValue('sync-tabs', preferences.syncTabs);
     this.setValue('log-level', preferences.logLevel || 'error');
+
+    // Blocklist
+    this.renderBlocklist(preferences.blockedSites || []);
   }
 
   private setValue(id: string, value: string | boolean | number): void {
@@ -214,6 +217,25 @@ class OptionsManager {
 
     // Auto-save on change (optional)
     // Commented out for now, requires user confirmation
+
+    // Blocklist management
+    const btnAddBlocked = document.getElementById('btn-add-blocked-site');
+    const blocklistInput = document.getElementById('blocklist-input') as HTMLInputElement;
+    if (btnAddBlocked && blocklistInput) {
+      btnAddBlocked.addEventListener('click', () => {
+        void this.addBlockedSite(blocklistInput.value.trim());
+        blocklistInput.value = '';
+      });
+
+      // Allow Enter key to add site
+      blocklistInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          void this.addBlockedSite(blocklistInput.value.trim());
+          blocklistInput.value = '';
+        }
+      });
+    }
   }
 
   private setupNavigation(): void {
@@ -270,6 +292,9 @@ class OptionsManager {
         autoReload: this.getCheckboxValue('auto-reload'),
         syncTabs: this.getCheckboxValue('sync-tabs'),
         logLevel: this.getSelectValue('log-level') as LogLevel,
+
+        // Blocklist (preserve existing blocklist)
+        blockedSites: this.state?.preferences.blockedSites || [],
       };
 
       // Send to background
@@ -447,6 +472,8 @@ class OptionsManager {
         exportDefaultPageSize: 'A4',
         exportIncludeToc: true,
         exportFilenameTemplate: '{title}',
+        // Blocklist defaults
+        blockedSites: [],
       };
 
       await chrome.runtime.sendMessage({
@@ -537,6 +564,114 @@ class OptionsManager {
       debug.error('Options', 'Failed to import settings:', error);
       this.showSaveStatus('Failed to import settings', true);
     }
+  }
+
+  /**
+   * Render the blocklist UI
+   */
+  private renderBlocklist(blockedSites: string[]): void {
+    const container = document.getElementById('blocklist-container');
+    if (!container) return;
+
+    if (blockedSites.length === 0) {
+      container.innerHTML = '<div class="blocklist-empty">No sites blocked</div>';
+      return;
+    }
+
+    container.innerHTML = blockedSites
+      .map(
+        (site, index) => `
+        <div class="blocklist-item" data-index="${index}">
+          <span class="blocklist-pattern">${this.escapeHtml(site)}</span>
+          <button class="blocklist-remove" data-site="${this.escapeHtml(site)}">Remove</button>
+        </div>
+      `
+      )
+      .join('');
+
+    // Add event listeners to remove buttons
+    container.querySelectorAll('.blocklist-remove').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const site = (e.target as HTMLElement).getAttribute('data-site');
+        if (site) {
+          void this.removeBlockedSite(site);
+        }
+      });
+    });
+  }
+
+  /**
+   * Add a site to the blocklist
+   */
+  private async addBlockedSite(pattern: string): Promise<void> {
+    if (!pattern) {
+      this.showSaveStatus('Please enter a site pattern', true);
+      return;
+    }
+
+    if (!this.state) return;
+
+    const blockedSites = [...(this.state.preferences.blockedSites || [])];
+
+    // Check for duplicates
+    if (blockedSites.includes(pattern)) {
+      this.showSaveStatus('Site already in blocklist', true);
+      return;
+    }
+
+    blockedSites.push(pattern);
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'UPDATE_PREFERENCES',
+        payload: { preferences: { blockedSites } },
+      });
+
+      this.state.preferences.blockedSites = blockedSites;
+      this.renderBlocklist(blockedSites);
+      this.showSaveStatus(`Added "${pattern}" to blocklist`, false);
+
+      debug.log('Options', 'Added to blocklist:', pattern);
+    } catch (error) {
+      debug.error('Options', 'Failed to add to blocklist:', error);
+      this.showSaveStatus('Failed to add site', true);
+    }
+  }
+
+  /**
+   * Remove a site from the blocklist
+   */
+  private async removeBlockedSite(pattern: string): Promise<void> {
+    if (!this.state) return;
+
+    const blockedSites = (this.state.preferences.blockedSites || []).filter(
+      (site) => site !== pattern
+    );
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'UPDATE_PREFERENCES',
+        payload: { preferences: { blockedSites } },
+      });
+
+      this.state.preferences.blockedSites = blockedSites;
+      this.renderBlocklist(blockedSites);
+      this.showSaveStatus(`Removed "${pattern}" from blocklist`, false);
+
+      debug.log('Options', 'Removed from blocklist:', pattern);
+    } catch (error) {
+      debug.error('Options', 'Failed to remove from blocklist:', error);
+      this.showSaveStatus('Failed to remove site', true);
+    }
+  }
+
+  /**
+   * Escape HTML for safe rendering
+   */
+  private escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 }
 
