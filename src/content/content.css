@@ -32,19 +32,18 @@
               border-color 100ms ease !important;
 }
 
-/* Reset and base styles - only apply when MDView is active */
-body.mdview-active,
-body.mdview-active * {
+/* Reset and base styles */
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-body.mdview-active ::selection {
+::selection {
   background: var(--md-selection);
 }
 
-body.mdview-active {
+body {
   background-color: var(--md-bg);
   color: var(--md-fg);
   font-family: var(--md-font-family);
@@ -242,12 +241,7 @@ body.mdview-active {
 }
 
 /* Headings */
-body.mdview-active h1,
-body.mdview-active h2,
-body.mdview-active h3,
-body.mdview-active h4,
-body.mdview-active h5,
-body.mdview-active h6 {
+h1, h2, h3, h4, h5, h6 {
   color: var(--md-heading);
   font-weight: 600;
   margin-top: 24px;
@@ -255,31 +249,31 @@ body.mdview-active h6 {
   line-height: 1.25;
 }
 
-body.mdview-active h1 {
+h1 {
   font-size: 2em;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--md-border);
 }
 
-body.mdview-active h2 {
+h2 {
   font-size: 1.5em;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--md-border);
 }
 
-body.mdview-active h3 {
+h3 {
   font-size: 1.25em;
 }
 
-body.mdview-active h4 {
+h4 {
   font-size: 1em;
 }
 
-body.mdview-active h5 {
+h5 {
   font-size: 0.875em;
 }
 
-body.mdview-active h6 {
+h6 {
   font-size: 0.85em;
   color: var(--md-fg);
   opacity: 0.7;
@@ -299,43 +293,42 @@ body.mdview-active h6 {
 }
 
 /* Paragraphs */
-body.mdview-active p {
+p {
   margin-top: 0;
   margin-bottom: 16px;
 }
 
 /* Links */
-body.mdview-active a {
+a {
   color: var(--md-link);
   text-decoration: none;
 }
 
-body.mdview-active a:hover {
+a:hover {
   color: var(--md-link-hover);
   text-decoration: underline;
 }
 
-body.mdview-active a:visited {
+a:visited {
   color: var(--md-link-visited);
 }
 
 /* Lists */
-body.mdview-active ul,
-body.mdview-active ol {
+ul, ol {
   margin-top: 0;
   margin-bottom: 16px;
   padding-left: 2em;
 }
 
-body.mdview-active li {
+li {
   margin-top: 0.25em;
 }
 
-body.mdview-active li > p {
+li > p {
   margin-bottom: 0;
 }
 
-body.mdview-active li + li {
+li + li {
   margin-top: 0.25em;
 }
 
@@ -351,7 +344,7 @@ body.mdview-active li + li {
 }
 
 /* Code */
-body.mdview-active code {
+code {
   background-color: var(--md-code-bg);
   color: var(--md-code-text);
   font-family: var(--md-font-family-code);
@@ -360,7 +353,7 @@ body.mdview-active code {
   border-radius: 3px;
 }
 
-body.mdview-active pre {
+pre {
   background-color: var(--md-code-bg);
   color: var(--md-code-text);
   font-family: var(--md-font-family-code);
@@ -371,7 +364,7 @@ body.mdview-active pre {
   margin-bottom: 16px;
 }
 
-body.mdview-active pre code {
+pre code {
   background: transparent;
   padding: 0;
   font-size: 100%;
@@ -537,7 +530,7 @@ pre code {
 /* Blockquotes */
 blockquote {
   margin: 0 0 16px 0;
-  padding: 0 1em;
+  padding: 0 1em 0 1.5em; /* Extra left padding to separate text from border */
   color: var(--md-fg);
   opacity: 0.8;
   border-left: 4px solid var(--md-border);
@@ -565,33 +558,33 @@ hr {
   margin-bottom: 16px;
 }
 
-body.mdview-active table {
+table {
   width: 100%;
   border-collapse: collapse;
   border-spacing: 0;
 }
 
-body.mdview-active table th {
+table th {
   font-weight: 600;
   background-color: var(--md-code-bg);
 }
 
-body.mdview-active table th,
-body.mdview-active table td {
+table th,
+table td {
   padding: 6px 13px;
   border: 1px solid var(--md-border);
 }
 
-body.mdview-active table tr {
+table tr {
   background-color: var(--md-bg);
 }
 
-body.mdview-active table tr:nth-child(2n) {
+table tr:nth-child(2n) {
   background-color: var(--md-code-bg);
 }
 
 /* Images */
-body.mdview-active img {
+img {
   max-width: 100%;
   height: auto;
   display: block;

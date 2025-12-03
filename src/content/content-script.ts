@@ -611,26 +611,14 @@ class MDViewContentScript {
         }
       }
 
-      // Handle TOC visibility toggle
-      if (preferences.showToc !== undefined) {
-        if (preferences.showToc) {
-          // Create TOC if it doesn't exist
-          if (!this.tocRenderer && this.state) {
-            const container = document.getElementById('mdview-container');
-            if (container) {
-              const headings = this.extractHeadings(container);
-              if (headings.length > 0) {
-                this.setupToc(headings, { ...this.state.preferences, showToc: true });
-              }
-            }
-          }
-          // Show TOC (whether newly created or existing)
-          if (this.tocRenderer) {
-            this.tocRenderer.show();
-          }
-        } else if (this.tocRenderer) {
-          this.tocRenderer.hide();
-        }
+      // Handle TOC visibility toggle - requires reload to strip/restore original TOC
+      if (
+        preferences.showToc !== undefined &&
+        this.state &&
+        preferences.showToc !== this.state.preferences.showToc
+      ) {
+        debug.info('MDView', 'TOC preference changed, reloading page to re-render...');
+        needsReload = true;
       }
 
       // Handle TOC settings changes
