@@ -535,19 +535,19 @@ pre code {
 
 
 /* Blockquotes */
-blockquote {
+body.mdview-active blockquote {
   margin: 0 0 16px 0;
-  padding: 0 1em;
+  padding: 0 1em 0 1.5em; /* Extra left padding to separate text from border */
   color: var(--md-fg);
   opacity: 0.8;
   border-left: 4px solid var(--md-border);
 }
 
-blockquote > :first-child {
+body.mdview-active blockquote > :first-child {
   margin-top: 0;
 }
 
-blockquote > :last-child {
+body.mdview-active blockquote > :last-child {
   margin-bottom: 0;
 }
 
