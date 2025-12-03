@@ -5,6 +5,36 @@
 
 * **changelog:** remove duplicate 0.2.0 section ([2e2cfd5](https://github.com/jamesainslie/mdview/commit/2e2cfd5b698b77d8c88244a3a0ed86ba6751de88))
 
+## [0.3.3](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.2...mdview-v0.3.3) (2025-12-03)
+
+
+### Features
+
+* **content:** add site blocklist controls ([cf167c6](https://github.com/jamesainslie/mdview/commit/cf167c6c585adeb26589e1c6d647a291ed9e5dc6))
+* **content:** check blocklist before rendering markdown ([b30519d](https://github.com/jamesainslie/mdview/commit/b30519d97274b7c77c8c092fc8113ec63440a7d8))
+* **options:** add blocklist management UI ([d93325d](https://github.com/jamesainslie/mdview/commit/d93325d875b42e4b09b9396790d676c5d9e41aca))
+* **popup:** add quick site blocking toggle ([769b37c](https://github.com/jamesainslie/mdview/commit/769b37c8b7c65a6eb1099f52c7eba6b4001eaf85))
+* **popup:** move site block toggle to footer ([dd50310](https://github.com/jamesainslie/mdview/commit/dd5031077c35aaa39e2a94e66a31653dbe9f7e60))
+* **types:** add blockedSites preference for site filtering ([cd5998f](https://github.com/jamesainslie/mdview/commit/cd5998f4f622947b24410fd6afaca449573eb199))
+* **utils:** implement site blocklist pattern matching ([71ccb04](https://github.com/jamesainslie/mdview/commit/71ccb049b34f192f21546bfa909dfb4069dd481c))
+
+
+### Bug Fixes
+
+* **content:** scope markdown styles to mdview ([98cf300](https://github.com/jamesainslie/mdview/commit/98cf300adf1a2279392906357e4af5d332f19ec4))
+* **pdf:** add missing return statement in prepareSvgsForPrint ([5a885ee](https://github.com/jamesainslie/mdview/commit/5a885ee9520f757cf6d209a196dff5f617a61814))
+* **popup:** ensure wildcard blocklist removal uses host string ([39f5804](https://github.com/jamesainslie/mdview/commit/39f580463b5d5a7142c3e5e0661a090606156aad))
+
+
+### Documentation
+
+* **changelog:** fix version ordering ([bc89abc](https://github.com/jamesainslie/mdview/commit/bc89abc51b3642263a60f433c3b15b76b7616b50))
+
+
+### Tests
+
+* **utils:** add unit tests for blocklist functionality ([a90e897](https://github.com/jamesainslie/mdview/commit/a90e897506f6680144eb4fe72599185214d6f964))
+
 ## [0.3.1](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.0...mdview-v0.3.1) (2025-12-02)
 
 
