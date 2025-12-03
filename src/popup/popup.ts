@@ -350,23 +350,29 @@ class PopupManager {
   private async toggleCurrentSiteBlocked(): Promise<void> {
     if (!this.currentTabHostname || !this.state) return;
 
+    const currentHost = this.currentTabHostname;
     const blockedSites = [...(this.state.preferences.blockedSites || [])];
-    const isCurrentlyBlocked = this.isSiteInBlocklist(this.currentTabHostname, blockedSites);
+    const isCurrentlyBlocked = this.isSiteInBlocklist(currentHost, blockedSites);
 
     let newBlockedSites: string[];
     if (isCurrentlyBlocked) {
       // Remove from blocklist (find exact match or wildcard that covers it)
       newBlockedSites = blockedSites.filter((pattern) => {
-        if (pattern === this.currentTabHostname) return false;
+        if (pattern === currentHost) {
+          return false;
+        }
+
         if (pattern.startsWith('*.')) {
           const baseDomain = pattern.substring(2);
-          if (
-            this.currentTabHostname === baseDomain ||
-            this.currentTabHostname?.endsWith('.' + baseDomain)
-          ) {
+          // currentHost is guaranteed to be a non-empty string here because
+          // we returned early when it was falsy. Use direct access so that
+          // wildcard patterns like "*.example.com" match both the base
+          // domain and its subdomains.
+          if (currentHost === baseDomain || currentHost.endsWith(`.${baseDomain}`)) {
             return false;
           }
         }
+
         return true;
       });
     } else {
