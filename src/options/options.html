@@ -277,6 +277,36 @@
               <p class="setting-description">Control verbosity of console logging</p>
             </div>
 
+            <h3 style="margin-top: 32px; margin-bottom: 16px; font-size: 18px;">Site Blocklist</h3>
+
+            <div class="setting-group">
+              <p class="setting-description" style="margin-bottom: 12px;">
+                Add sites where MDView should not render markdown. Useful for sites that have their own markdown rendering (like GitHub).
+              </p>
+              
+              <div class="blocklist-input-row">
+                <input type="text" id="blocklist-input" class="setting-input" 
+                       placeholder="e.g., github.com or *.gitlab.com/*/blob/*" />
+                <button id="btn-add-blocked-site" class="action-button">Add</button>
+              </div>
+              
+              <div class="blocklist-patterns-help">
+                <details>
+                  <summary>Pattern examples</summary>
+                  <ul class="pattern-examples">
+                    <li><code>github.com</code> - Block entire domain</li>
+                    <li><code>*.github.com</code> - Block all subdomains</li>
+                    <li><code>github.com/*/blob/*</code> - Block specific paths</li>
+                    <li><code>https://raw.githubusercontent.com/*</code> - Full URL pattern</li>
+                  </ul>
+                </details>
+              </div>
+
+              <div id="blocklist-container" class="blocklist-container">
+                <!-- Blocked sites will be rendered here -->
+              </div>
+            </div>
+
             <div class="setting-group">
               <button id="btn-clear-cache" class="action-button">Clear Cache</button>
               <p class="setting-description">Clear all cached markdown and theme data</p>

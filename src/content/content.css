@@ -32,18 +32,19 @@
               border-color 100ms ease !important;
 }
 
-/* Reset and base styles */
-* {
+/* Reset and base styles - only apply when MDView is active */
+body.mdview-active,
+body.mdview-active * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-::selection {
+body.mdview-active ::selection {
   background: var(--md-selection);
 }
 
-body {
+body.mdview-active {
   background-color: var(--md-bg);
   color: var(--md-fg);
   font-family: var(--md-font-family);
@@ -241,7 +242,12 @@ body {
 }
 
 /* Headings */
-h1, h2, h3, h4, h5, h6 {
+body.mdview-active h1,
+body.mdview-active h2,
+body.mdview-active h3,
+body.mdview-active h4,
+body.mdview-active h5,
+body.mdview-active h6 {
   color: var(--md-heading);
   font-weight: 600;
   margin-top: 24px;
@@ -249,31 +255,31 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.25;
 }
 
-h1 {
+body.mdview-active h1 {
   font-size: 2em;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--md-border);
 }
 
-h2 {
+body.mdview-active h2 {
   font-size: 1.5em;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--md-border);
 }
 
-h3 {
+body.mdview-active h3 {
   font-size: 1.25em;
 }
 
-h4 {
+body.mdview-active h4 {
   font-size: 1em;
 }
 
-h5 {
+body.mdview-active h5 {
   font-size: 0.875em;
 }
 
-h6 {
+body.mdview-active h6 {
   font-size: 0.85em;
   color: var(--md-fg);
   opacity: 0.7;
@@ -293,42 +299,43 @@ h6 {
 }
 
 /* Paragraphs */
-p {
+body.mdview-active p {
   margin-top: 0;
   margin-bottom: 16px;
 }
 
 /* Links */
-a {
+body.mdview-active a {
   color: var(--md-link);
   text-decoration: none;
 }
 
-a:hover {
+body.mdview-active a:hover {
   color: var(--md-link-hover);
   text-decoration: underline;
 }
 
-a:visited {
+body.mdview-active a:visited {
   color: var(--md-link-visited);
 }
 
 /* Lists */
-ul, ol {
+body.mdview-active ul,
+body.mdview-active ol {
   margin-top: 0;
   margin-bottom: 16px;
   padding-left: 2em;
 }
 
-li {
+body.mdview-active li {
   margin-top: 0.25em;
 }
 
-li > p {
+body.mdview-active li > p {
   margin-bottom: 0;
 }
 
-li + li {
+body.mdview-active li + li {
   margin-top: 0.25em;
 }
 
@@ -344,7 +351,7 @@ li + li {
 }
 
 /* Code */
-code {
+body.mdview-active code {
   background-color: var(--md-code-bg);
   color: var(--md-code-text);
   font-family: var(--md-font-family-code);
@@ -353,7 +360,7 @@ code {
   border-radius: 3px;
 }
 
-pre {
+body.mdview-active pre {
   background-color: var(--md-code-bg);
   color: var(--md-code-text);
   font-family: var(--md-font-family-code);
@@ -364,7 +371,7 @@ pre {
   margin-bottom: 16px;
 }
 
-pre code {
+body.mdview-active pre code {
   background: transparent;
   padding: 0;
   font-size: 100%;
@@ -558,33 +565,33 @@ hr {
   margin-bottom: 16px;
 }
 
-table {
+body.mdview-active table {
   width: 100%;
   border-collapse: collapse;
   border-spacing: 0;
 }
 
-table th {
+body.mdview-active table th {
   font-weight: 600;
   background-color: var(--md-code-bg);
 }
 
-table th,
-table td {
+body.mdview-active table th,
+body.mdview-active table td {
   padding: 6px 13px;
   border: 1px solid var(--md-border);
 }
 
-table tr {
+body.mdview-active table tr {
   background-color: var(--md-bg);
 }
 
-table tr:nth-child(2n) {
+body.mdview-active table tr:nth-child(2n) {
   background-color: var(--md-code-bg);
 }
 
 /* Images */
-img {
+body.mdview-active img {
   max-width: 100%;
   height: auto;
   display: block;

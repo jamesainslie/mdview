@@ -1,16 +1,16 @@
-## [0.3.1](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.0...mdview-v0.3.1) (2025-12-02)
-
-
-### Documentation
-
-* **changelog:** remove manual unreleased section ([eaf770f](https://github.com/jamesainslie/mdview/commit/eaf770f71be1d6696e040f34f288da47469a246f))
-
 ## [0.3.2](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.1...mdview-v0.3.2) (2025-12-02)
 
 
 ### Documentation
 
 * **changelog:** remove duplicate 0.2.0 section ([2e2cfd5](https://github.com/jamesainslie/mdview/commit/2e2cfd5b698b77d8c88244a3a0ed86ba6751de88))
+
+## [0.3.1](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.0...mdview-v0.3.1) (2025-12-02)
+
+
+### Documentation
+
+* **changelog:** remove manual unreleased section ([eaf770f](https://github.com/jamesainslie/mdview/commit/eaf770f71be1d6696e040f34f288da47469a246f))
 
 ## [0.3.0](https://github.com/jamesainslie/mdview/compare/mdview-v0.2.8...mdview-v0.3.0) (2025-12-02)
 

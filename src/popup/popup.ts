@@ -8,12 +8,16 @@ import { debug } from '../utils/debug-logger';
 
 class PopupManager {
   private state: AppState | null = null;
+  private currentTabHostname: string | null = null;
 
   async initialize(): Promise<void> {
     debug.log('Popup', 'Initializing...');
 
     // Load state
     await this.loadState();
+
+    // Get current tab info for site blocking
+    await this.loadCurrentTabInfo();
 
     // Update UI with current state
     this.updateUI();
@@ -28,6 +32,24 @@ class PopupManager {
     this.setAppVersion();
 
     debug.log('Popup', 'Initialized');
+  }
+
+  private async loadCurrentTabInfo(): Promise<void> {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.url) {
+        const url = new URL(tab.url);
+        // Only show site blocking for http/https URLs
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+          this.currentTabHostname = url.hostname;
+        } else if (url.protocol === 'file:') {
+          // For local files, we could block by path pattern but it's less useful
+          this.currentTabHostname = null;
+        }
+      }
+    } catch (error) {
+      debug.error('Popup', 'Failed to get current tab info:', error);
+    }
   }
 
   private setAppVersion(): void {
@@ -119,6 +141,61 @@ class PopupManager {
     if (logLevelSelect) {
       logLevelSelect.value = preferences.logLevel || 'error';
     }
+
+    // Update site blocking section
+    this.updateSiteBlockingUI();
+  }
+
+  private updateSiteBlockingUI(): void {
+    const toggleBtn = document.getElementById('btn-toggle-site-block');
+
+    if (!toggleBtn) return;
+
+    // Always keep the icon text (🚫), only change state and tooltip
+    toggleBtn.textContent = '🚫';
+
+    // For local files, disable the button
+    if (!this.currentTabHostname) {
+      toggleBtn.classList.add('disabled');
+      (toggleBtn as HTMLButtonElement).disabled = true;
+      toggleBtn.title = 'Site blocking is not available for local files';
+      toggleBtn.setAttribute('aria-label', 'Site blocking is not available for local files');
+      return;
+    }
+
+    (toggleBtn as HTMLButtonElement).disabled = false;
+    toggleBtn.classList.remove('disabled');
+
+    // Check if current site is blocked
+    const blockedSites = this.state?.preferences.blockedSites || [];
+    const isBlocked = this.isSiteInBlocklist(this.currentTabHostname, blockedSites);
+
+    if (isBlocked) {
+      toggleBtn.classList.add('blocked');
+      const title = `Render ${this.currentTabHostname} with MDView`;
+      toggleBtn.title = title;
+      toggleBtn.setAttribute('aria-label', title);
+    } else {
+      toggleBtn.classList.remove('blocked');
+      const title = `Don't render this site with MDView`;
+      toggleBtn.title = title;
+      toggleBtn.setAttribute('aria-label', title);
+    }
+  }
+
+  private isSiteInBlocklist(hostname: string, blocklist: string[]): boolean {
+    for (const pattern of blocklist) {
+      // Exact match
+      if (pattern === hostname) return true;
+      // Wildcard subdomain match
+      if (pattern.startsWith('*.')) {
+        const baseDomain = pattern.substring(2);
+        if (hostname === baseDomain || hostname.endsWith('.' + baseDomain)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private setupEventListeners(): void {
@@ -259,6 +336,69 @@ class PopupManager {
           url: 'https://github.com/jamesainslie/mdview#readme',
         });
       });
+    }
+
+    // Site block toggle button
+    const btnToggleSiteBlock = document.getElementById('btn-toggle-site-block');
+    if (btnToggleSiteBlock) {
+      btnToggleSiteBlock.addEventListener('click', () => {
+        void this.toggleCurrentSiteBlocked();
+      });
+    }
+  }
+
+  private async toggleCurrentSiteBlocked(): Promise<void> {
+    if (!this.currentTabHostname || !this.state) return;
+
+    const currentHost = this.currentTabHostname;
+    const blockedSites = [...(this.state.preferences.blockedSites || [])];
+    const isCurrentlyBlocked = this.isSiteInBlocklist(currentHost, blockedSites);
+
+    let newBlockedSites: string[];
+    if (isCurrentlyBlocked) {
+      // Remove from blocklist (find exact match or wildcard that covers it)
+      newBlockedSites = blockedSites.filter((pattern) => {
+        if (pattern === currentHost) {
+          return false;
+        }
+
+        if (pattern.startsWith('*.')) {
+          const baseDomain = pattern.substring(2);
+          // currentHost is guaranteed to be a non-empty string here because
+          // we returned early when it was falsy. Use direct access so that
+          // wildcard patterns like "*.example.com" match both the base
+          // domain and its subdomains.
+          if (currentHost === baseDomain || currentHost.endsWith(`.${baseDomain}`)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    } else {
+      // Add to blocklist
+      newBlockedSites = [...blockedSites, this.currentTabHostname];
+    }
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'UPDATE_PREFERENCES',
+        payload: { preferences: { blockedSites: newBlockedSites } },
+      });
+
+      this.state.preferences.blockedSites = newBlockedSites;
+      this.updateSiteBlockingUI();
+
+      // Reload the tab to apply the change
+      await chrome.tabs.reload();
+
+      debug.log(
+        'Popup',
+        isCurrentlyBlocked ? 'Unblocked site:' : 'Blocked site:',
+        this.currentTabHostname
+      );
+    } catch (error) {
+      debug.error('Popup', 'Failed to toggle site block:', error);
     }
   }
 

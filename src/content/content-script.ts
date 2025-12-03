@@ -3,6 +3,7 @@
  * Injected into markdown files to handle rendering
  */
 
+// CSS is imported but only activated when we add .mdview-active to body
 import './content.css';
 import { FileScanner } from '../utils/file-scanner';
 import type { AppState } from '../types';
@@ -51,9 +52,15 @@ class MDViewContentScript {
 
     // Check if this is a markdown file (before logging, since we need state for debug mode)
     const isMarkdown = FileScanner.isMarkdownFile();
+    console.log('[MDView] isMarkdownFile check:', {
+      isMarkdown,
+      contentType: document.contentType,
+      pathname: window.location.pathname,
+      href: window.location.href,
+    });
     if (!isMarkdown) {
-      // Can't debug.log here as debug mode isn't loaded yet
       console.log('[MDView] Not a markdown file, skipping initialization');
+      this.logStyleDebug('non-markdown');
       return;
     }
 
@@ -67,6 +74,22 @@ class MDViewContentScript {
       debug.debug('MDView', `Document ready state: ${document.readyState}`);
       debug.debug('MDView', `Debug mode enabled: ${this.state?.preferences.debug}`);
       debug.debug('MDView', `Auto-reload enabled: ${this.state?.preferences.autoReload}`);
+
+      // Check if this site is in the blocklist
+      const blockedSites = this.state?.preferences.blockedSites || [];
+      debug.info('MDView', `Blocklist check - patterns: ${JSON.stringify(blockedSites)}`);
+      debug.info('MDView', `Blocklist check - current hostname: ${window.location.hostname}`);
+      if (FileScanner.isSiteBlocked(blockedSites)) {
+        debug.info('MDView', 'Site is in blocklist, skipping rendering');
+        this.logStyleDebug('blocked');
+        console.log('[MDView] Site blocked by user preference, skipping initialization');
+        return;
+      }
+      debug.info('MDView', 'Site is NOT blocked, proceeding with render');
+
+      // Activate styles only after confirming this page should be rendered
+      this.activateStyles();
+
       debug.info('MDView', 'Content script initializing...');
       debug.info('MDView', 'Markdown file detected:', FileScanner.getFilePath());
 
@@ -267,6 +290,93 @@ class MDViewContentScript {
       }
 
       this.showError('Failed to initialize MDView', error);
+    }
+  }
+
+  /**
+   * Activate MDView styles by adding a scoping class to the body element.
+   * Global resets in content.css are scoped to body.mdview-active to avoid
+   * impacting sites where MDView should not render (e.g. GitHub UI pages).
+   */
+  private activateStyles(): void {
+    document.body.classList.add('mdview-active');
+    debug.info('MDView', 'Content styles activated (body.mdview-active)');
+  }
+
+  /**
+   * Emit debug information about styles in different contexts
+   * (non-markdown page, blocked site, etc.). This helps verify
+   * whether any MDView styles are affecting the page when they
+   * should not.
+   */
+  private logStyleDebug(context: string): void {
+    try {
+      debug.info('MDView', `=== STYLE DEBUG START (${context}) ===`);
+
+      // 1. Body class list and key computed styles
+      const body = document.body;
+      const classes = Array.from(body.classList.values());
+      const computed = window.getComputedStyle(body);
+
+      debug.info('MDView', 'Body classList:', JSON.stringify(classes));
+      debug.info('MDView', 'Body computed styles snapshot:', {
+        backgroundColor: computed.backgroundColor,
+        color: computed.color,
+        fontFamily: computed.fontFamily,
+        fontSize: computed.fontSize,
+        lineHeight: computed.lineHeight,
+      });
+
+      // 2. Stylesheets originating from this extension
+      const styleSheets = Array.from(document.styleSheets);
+      const extensionId = chrome.runtime.id;
+
+      const extensionSheets: Array<{
+        index: number;
+        href: string | null;
+        ownerTag: string | null;
+        rules: number | 'unknown';
+      }> = [];
+
+      styleSheets.forEach((sheet, index) => {
+        let href: string | null = null;
+        let ownerTag: string | null = null;
+        let rules: number | 'unknown' = 'unknown';
+
+        try {
+          href = sheet.href || null;
+        } catch {
+          href = null;
+        }
+
+        const owner = sheet.ownerNode as HTMLElement | null;
+        if (owner) {
+          ownerTag = owner.tagName.toLowerCase();
+        }
+
+        const isFromExtension =
+          (href && href.startsWith(`chrome-extension://${extensionId}/`)) ||
+          (owner && owner.tagName.toLowerCase() === 'style');
+
+        if (!isFromExtension) {
+          return;
+        }
+
+        try {
+          // Accessing cssRules may throw for cross-origin stylesheets
+          const cssRules = sheet.cssRules;
+          rules = cssRules ? cssRules.length : 0;
+        } catch {
+          rules = 'unknown';
+        }
+
+        extensionSheets.push({ index, href, ownerTag, rules });
+      });
+
+      debug.info('MDView', 'Extension stylesheets on page:', extensionSheets);
+      debug.info('MDView', `=== STYLE DEBUG END (${context}) ===`);
+    } catch (error) {
+      debug.error('MDView', 'Failed to collect style debug:', error);
     }
   }
 
