@@ -151,12 +151,15 @@ class PopupManager {
 
     if (!toggleBtn) return;
 
+    // Always keep the icon text (🚫), only change state and tooltip
+    toggleBtn.textContent = '🚫';
+
     // For local files, disable the button
     if (!this.currentTabHostname) {
-      toggleBtn.textContent = 'Local file';
       toggleBtn.classList.add('disabled');
       (toggleBtn as HTMLButtonElement).disabled = true;
       toggleBtn.title = 'Site blocking is not available for local files';
+      toggleBtn.setAttribute('aria-label', 'Site blocking is not available for local files');
       return;
     }
 
@@ -168,13 +171,15 @@ class PopupManager {
     const isBlocked = this.isSiteInBlocklist(this.currentTabHostname, blockedSites);
 
     if (isBlocked) {
-      toggleBtn.textContent = `Render ${this.currentTabHostname}`;
       toggleBtn.classList.add('blocked');
-      toggleBtn.title = `Re-enable MDView rendering on ${this.currentTabHostname}`;
+      const title = `Render ${this.currentTabHostname} with MDView`;
+      toggleBtn.title = title;
+      toggleBtn.setAttribute('aria-label', title);
     } else {
-      toggleBtn.textContent = `Don't render this site`;
       toggleBtn.classList.remove('blocked');
-      toggleBtn.title = `Stop MDView from rendering on ${this.currentTabHostname}`;
+      const title = `Don't render this site with MDView`;
+      toggleBtn.title = title;
+      toggleBtn.setAttribute('aria-label', title);
     }
   }
 

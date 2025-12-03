@@ -94,11 +94,11 @@
         <!-- Quick Actions -->
         <section class="setting-section">
           <div class="quick-actions">
-            <button id="btn-toggle-site-block" class="action-button site-block-button" title="Stop MDView from rendering on this site">
-              Don't render this site
-            </button>
             <button id="btn-settings" class="action-button">
               Full Settings
+            </button>
+            <button id="btn-help" class="action-button">
+              Help
             </button>
           </div>
         </section>
@@ -107,14 +107,24 @@
       <footer class="popup-footer">
         <div class="footer-top-row">
           <p class="version" id="app-version">Version 1.0.0</p>
-          <button
-            id="btn-reload-extension"
-            class="footer-reload-btn"
-            title="Reload current tab"
-            aria-label="Reload current tab"
-          >
-            🚀
-          </button>
+          <div class="footer-icon-row">
+            <button
+              id="btn-toggle-site-block"
+              class="footer-icon-btn footer-block-btn"
+              title="Don't render this site"
+              aria-label="Don't render this site"
+            >
+              🚫
+            </button>
+            <button
+              id="btn-reload-extension"
+              class="footer-icon-btn"
+              title="Reload current tab"
+              aria-label="Reload current tab"
+            >
+              🚀
+            </button>
+          </div>
         </div>
         <p class="made-with-love">Made with ❤️ by James Ainslie</p>
       </footer>
