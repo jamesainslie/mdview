@@ -6,13 +6,19 @@
 :root {
   /* Default theme variables (GitHub Light) */
   --md-bg: #ffffff;
+  --md-bg-secondary: #f6f8fa;
   --md-fg: #24292f;
+  --md-fg-muted: #6e7781;
   --md-heading: #1f2328;
   --md-link: #0969da;
   --md-link-hover: #0550ae;
   --md-link-visited: #8250df;
   --md-code-bg: #f6f8fa;
   --md-code-text: #24292f;
+  --md-code-keyword: #cf222e;
+  --md-code-string: #0a3069;
+  --md-code-comment: #6e7781;
+  --md-code-function: #8250df;
   --md-border: #d0d7de;
   --md-selection: rgba(9, 105, 218, 0.2);
   --md-shadow: rgba(0, 0, 0, 0.1);
@@ -33,10 +39,16 @@
 }
 
 /* Reset and base styles - only apply when MDView is active */
-body.mdview-active,
-body.mdview-active * {
+body.mdview-active {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
+}
+
+/* Global box-sizing without resetting margins/padding */
+#mdview-container *,
+#mdview-container *::before,
+#mdview-container *::after {
   box-sizing: border-box;
 }
 
@@ -378,58 +390,90 @@ body.mdview-active pre code {
 }
 
 /* Syntax highlighting (highlight.js classes) */
-.hljs {
+/* Use higher specificity to override body.mdview-active code color */
+pre code.hljs,
+pre .hljs {
   display: block;
   overflow-x: auto;
   color: var(--md-code-text);
   background: var(--md-code-bg);
 }
 
-.hljs-keyword,
-.hljs-selector-tag,
-.hljs-literal,
-.hljs-section,
-.hljs-link {
+pre code .hljs-keyword,
+pre code .hljs-selector-tag,
+pre code .hljs-literal,
+pre code .hljs-section,
+pre code .hljs-link,
+pre .hljs-keyword,
+pre .hljs-selector-tag,
+pre .hljs-literal,
+pre .hljs-section,
+pre .hljs-link {
   color: var(--md-code-keyword);
 }
 
-.hljs-string,
-.hljs-title,
-.hljs-name,
-.hljs-type,
-.hljs-attribute,
-.hljs-symbol,
-.hljs-bullet,
-.hljs-addition,
-.hljs-variable,
-.hljs-template-tag,
-.hljs-template-variable {
+pre code .hljs-string,
+pre code .hljs-title,
+pre code .hljs-name,
+pre code .hljs-type,
+pre code .hljs-attribute,
+pre code .hljs-symbol,
+pre code .hljs-bullet,
+pre code .hljs-addition,
+pre code .hljs-variable,
+pre code .hljs-template-tag,
+pre code .hljs-template-variable,
+pre .hljs-string,
+pre .hljs-title,
+pre .hljs-name,
+pre .hljs-type,
+pre .hljs-attribute,
+pre .hljs-symbol,
+pre .hljs-bullet,
+pre .hljs-addition,
+pre .hljs-variable,
+pre .hljs-template-tag,
+pre .hljs-template-variable {
   color: var(--md-code-string);
 }
 
-.hljs-comment,
-.hljs-quote,
-.hljs-deletion,
-.hljs-meta {
+pre code .hljs-comment,
+pre code .hljs-quote,
+pre code .hljs-deletion,
+pre code .hljs-meta,
+pre .hljs-comment,
+pre .hljs-quote,
+pre .hljs-deletion,
+pre .hljs-meta {
   color: var(--md-code-comment);
 }
 
-.hljs-function,
-.hljs-number,
-.hljs-selector-class,
-.hljs-selector-id,
-.hljs-built_in,
-.hljs-builtin-name,
-.hljs-title.class_,
-.hljs-class .hljs-title {
+pre code .hljs-function,
+pre code .hljs-number,
+pre code .hljs-selector-class,
+pre code .hljs-selector-id,
+pre code .hljs-built_in,
+pre code .hljs-builtin-name,
+pre code .hljs-title.class_,
+pre code .hljs-class .hljs-title,
+pre .hljs-function,
+pre .hljs-number,
+pre .hljs-selector-class,
+pre .hljs-selector-id,
+pre .hljs-built_in,
+pre .hljs-builtin-name,
+pre .hljs-title.class_,
+pre .hljs-class .hljs-title {
   color: var(--md-code-function);
 }
 
-.hljs-emphasis {
+pre code .hljs-emphasis,
+pre .hljs-emphasis {
   font-style: italic;
 }
 
-.hljs-strong {
+pre code .hljs-strong,
+pre .hljs-strong {
   font-weight: bold;
 }
 
@@ -444,10 +488,16 @@ body.mdview-active pre code {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
+  margin: 0;
   background-color: var(--md-code-bg);
   border: 1px solid var(--md-border);
   border-bottom: none;
   border-radius: 6px 6px 0 0;
+}
+
+.code-block-header * {
+  margin: 0;
+  padding: 0;
 }
 
 .code-language-badge {
@@ -456,10 +506,13 @@ body.mdview-active pre code {
   color: var(--md-fg);
   text-transform: uppercase;
   opacity: 0.7;
+  margin: 0;
+  padding: 0;
 }
 
 .code-copy-button {
   padding: 4px 12px;
+  margin: 0;
   font-size: 12px;
   font-weight: 500;
   color: var(--md-fg);
@@ -475,11 +528,13 @@ body.mdview-active pre code {
   border-color: var(--md-link);
 }
 
-.code-block-wrapper pre {
+/* Override body.mdview-active pre border-radius with higher specificity */
+body.mdview-active .code-block-wrapper pre {
   margin: 0;
   border-radius: 0 0 6px 6px;
   border: 1px solid var(--md-border);
   border-top: none;
+  overflow: hidden;
 }
 
 /* Line Numbers */
@@ -498,7 +553,7 @@ body.mdview-active pre code {
   overflow: hidden;
 }
 
-.code-block-wrapper.has-line-numbers pre {
+body.mdview-active .code-block-wrapper.has-line-numbers pre {
   border: none;
   border-radius: 0;
   margin: 0;
@@ -1103,65 +1158,108 @@ img[loading="lazy"].loaded {
   }
 }
 
-/* Table of Contents - Fixed Sidebar */
+/* Table of Contents - Floating Card Style (default) */
 .mdview-toc-overlay {
   position: fixed;
-  top: 0;
+  top: 60px;
   width: 280px;
-  height: 100vh;
+  max-height: calc(100vh - 120px);
   background-color: var(--md-bg);
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  border-radius: 8px;
+  border: 1px solid var(--md-border);
+  box-shadow: 0 4px 12px var(--md-shadow);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .mdview-toc-overlay.position-left {
-  left: 0;
-  border-right: 1px solid var(--md-border);
-  transform: translateX(-100%);
-}
-
-.mdview-toc-overlay.position-left.visible {
-  transform: translateX(0);
+  left: 16px;
+  transform: translateX(-8px);
 }
 
 .mdview-toc-overlay.position-right {
-  right: 0;
-  border-left: 1px solid var(--md-border);
-  transform: translateX(100%);
+  right: 16px;
+  transform: translateX(8px);
 }
 
-.mdview-toc-overlay.position-right.visible {
+.mdview-toc-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
   transform: translateX(0);
 }
 
-/* Push content when TOC is visible */
-body.toc-visible-left #mdview-container {
+/* Fixed sidebar style variant */
+.mdview-toc-overlay.toc-style-fixed {
+  top: 0;
+  max-height: 100vh;
+  height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mdview-toc-overlay.toc-style-fixed.position-left {
+  left: 0;
+  border-right: 1px solid var(--md-border);
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+  transform: translateX(-100%);
+}
+
+.mdview-toc-overlay.toc-style-fixed.position-right {
+  right: 0;
+  border-left: 1px solid var(--md-border);
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+  transform: translateX(100%);
+}
+
+.mdview-toc-overlay.toc-style-fixed.visible {
+  transform: translateX(0);
+}
+
+/* Push content when fixed TOC is visible */
+body.toc-style-fixed.toc-visible-left #mdview-container {
   margin-left: 280px;
   transition: margin-left 0.3s ease;
 }
 
-body.toc-visible-right #mdview-container {
+body.toc-style-fixed.toc-visible-right #mdview-container {
   margin-right: 280px;
   transition: margin-right 0.3s ease;
 }
 
-/* TOC Toggle Button - Subtle */
+/* Move export button when fixed TOC is visible */
+body.toc-style-fixed.toc-visible-left .mdview-export-btn.position-left {
+  left: 296px;
+}
+
+body.toc-style-fixed.toc-visible-right .mdview-export-btn.position-right {
+  right: 336px;
+}
+
+/* TOC Toggle Button - Matches export button style */
 .mdview-toc-toggle-btn {
   position: fixed;
   top: 16px;
   width: 32px;
   height: 32px;
-  background-color: transparent;
+  background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
-  transition: all 0.2s ease;
+  z-index: 1000;
+  transition: opacity 0.2s, background-color 0.2s, border-color 0.2s;
   font-size: 16px;
   color: var(--md-fg);
   opacity: 0.4;
@@ -1169,9 +1267,8 @@ body.toc-visible-right #mdview-container {
 
 .mdview-toc-toggle-btn:hover {
   opacity: 1;
-  background-color: var(--md-code-bg);
+  background: var(--md-code-bg);
   border-color: var(--md-border);
-  box-shadow: 0 1px 4px var(--md-shadow);
 }
 
 .mdview-toc-toggle-btn.position-left {
@@ -1182,54 +1279,54 @@ body.toc-visible-right #mdview-container {
   right: 16px;
 }
 
-body.toc-visible-left .mdview-toc-toggle-btn.position-left {
-  left: 296px;
-  opacity: 0.6;
-}
-
+/* Active state when TOC is visible */
+body.toc-visible-left .mdview-toc-toggle-btn.position-left,
 body.toc-visible-right .mdview-toc-toggle-btn.position-right {
-  right: 296px;
-  opacity: 0.6;
+  opacity: 1;
+  background: var(--md-code-bg);
+  border-color: var(--md-link);
 }
 
+/* Header */
 .mdview-toc-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--md-border);
-  background-color: var(--md-code-bg);
 }
 
 .mdview-toc-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--md-heading);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--md-fg-muted, var(--md-fg));
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .mdview-toc-close {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   padding: 0;
-  font-size: 20px;
+  font-size: 16px;
   line-height: 1;
-  color: var(--md-fg);
+  color: var(--md-fg-muted, var(--md-fg));
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .mdview-toc-close:hover {
-  background-color: var(--md-border);
+  background: var(--md-code-bg);
+  color: var(--md-fg);
 }
 
+/* Content area */
 .mdview-toc-content {
   flex: 1;
   overflow-y: auto;
@@ -1237,66 +1334,120 @@ body.toc-visible-right .mdview-toc-toggle-btn.position-right {
   padding: 8px 0;
 }
 
-.mdview-toc-list {
+/* List reset */
+.mdview-toc-overlay .mdview-toc-list,
+.mdview-toc-overlay .mdview-toc-list ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.mdview-toc-item {
+.mdview-toc-overlay .mdview-toc-item {
   position: relative;
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
+/* Links with dot indicators */
 .mdview-toc-link {
-  display: block;
-  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--md-fg);
   text-decoration: none;
-  transition: all 0.2s ease;
-  border-left: 2px solid transparent;
+  transition: all 0.15s ease;
+  border-radius: 6px;
+  margin: 2px 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mdview-toc-link:hover {
-  color: var(--md-link);
-  background-color: var(--md-code-bg);
+.mdview-toc-link::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--md-border);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
-.mdview-toc-item.active > .mdview-toc-link {
+.mdview-toc-link:hover {
+  background: var(--md-code-bg);
   color: var(--md-link);
-  border-left-color: var(--md-link);
-  background-color: var(--md-code-bg);
+}
+
+.mdview-toc-link:hover::before {
+  background: var(--md-link);
+  transform: scale(1.3);
+}
+
+/* Active state */
+.mdview-toc-item.active > .mdview-toc-link {
+  background: var(--md-selection, rgba(9, 105, 218, 0.1));
+  color: var(--md-link);
   font-weight: 500;
 }
 
-/* Heading level indentation */
+.mdview-toc-item.active > .mdview-toc-link::before {
+  background: var(--md-link);
+  box-shadow: 0 0 0 3px var(--md-selection, rgba(9, 105, 218, 0.2));
+}
+
+/* Heading level styling - smaller dots and opacity for deeper levels */
 .mdview-toc-level-1 > .mdview-toc-link {
-  padding-left: 16px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.mdview-toc-level-1 > .mdview-toc-link::before {
+  width: 8px;
+  height: 8px;
 }
 
 .mdview-toc-level-2 > .mdview-toc-link {
   padding-left: 28px;
+  font-size: 13px;
 }
 
 .mdview-toc-level-3 > .mdview-toc-link {
-  padding-left: 40px;
+  padding-left: 42px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.mdview-toc-level-3 > .mdview-toc-link::before {
+  width: 5px;
+  height: 5px;
 }
 
 .mdview-toc-level-4 > .mdview-toc-link {
-  padding-left: 52px;
+  padding-left: 56px;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
-.mdview-toc-level-5 > .mdview-toc-link {
-  padding-left: 64px;
+.mdview-toc-level-4 > .mdview-toc-link::before {
+  width: 4px;
+  height: 4px;
 }
 
+.mdview-toc-level-5 > .mdview-toc-link,
 .mdview-toc-level-6 > .mdview-toc-link {
-  padding-left: 76px;
+  padding-left: 70px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.mdview-toc-level-5 > .mdview-toc-link::before,
+.mdview-toc-level-6 > .mdview-toc-link::before {
+  width: 4px;
+  height: 4px;
 }
 
 /* Collapse/expand toggle */
@@ -1305,21 +1456,23 @@ body.toc-visible-right .mdview-toc-toggle-btn.position-right {
   left: 4px;
   top: 50%;
   transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   padding: 0;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1;
-  color: var(--md-fg);
+  color: var(--md-fg-muted, var(--md-fg));
   background: transparent;
   border: none;
+  border-radius: 4px;
   cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.2s ease;
+  opacity: 0.6;
+  transition: all 0.15s ease;
 }
 
 .mdview-toc-toggle:hover {
   opacity: 1;
+  background: var(--md-code-bg);
 }
 
 .mdview-toc-item.has-children {
@@ -1330,9 +1483,9 @@ body.toc-visible-right .mdview-toc-toggle-btn.position-right {
   transition: all 0.2s ease;
 }
 
-/* Scrollbar styling for TOC */
+/* Custom scrollbar */
 .mdview-toc-content::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .mdview-toc-content::-webkit-scrollbar-track {
@@ -1341,7 +1494,7 @@ body.toc-visible-right .mdview-toc-toggle-btn.position-right {
 
 .mdview-toc-content::-webkit-scrollbar-thumb {
   background: var(--md-border);
-  border-radius: 3px;
+  border-radius: 10px;
 }
 
 .mdview-toc-content::-webkit-scrollbar-thumb:hover {
