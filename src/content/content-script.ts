@@ -644,6 +644,24 @@ class MDViewContentScript {
         });
       }
 
+      // Handle TOC style change - requires re-setup
+      if (
+        preferences.tocStyle !== undefined &&
+        this.state &&
+        preferences.tocStyle !== this.state.preferences.tocStyle
+      ) {
+        debug.info('MDView', 'TOC style changed, re-setting up TOC...');
+        const container = document.getElementById('mdview-container');
+        if (container) {
+          const headings = this.extractHeadings(container);
+          if (headings.length > 0) {
+            // Merge new preference with existing
+            const mergedPrefs = { ...this.state.preferences, ...preferences };
+            this.setupToc(headings, mergedPrefs);
+          }
+        }
+      }
+
       // Check for structural changes that require re-render
       let needsReload = false;
       debug.info(
@@ -769,6 +787,9 @@ class MDViewContentScript {
         this.tocRenderer.destroy();
       }
 
+      // Remove any existing TOC style class from body
+      document.body.classList.remove('toc-style-fixed');
+
       // Create new TOC renderer
       this.tocRenderer = new TocRenderer({
         maxDepth: preferences.tocMaxDepth || 6,
@@ -778,6 +799,14 @@ class MDViewContentScript {
 
       // Render TOC
       const tocElement = this.tocRenderer.render(headings);
+
+      // Apply TOC style class
+      const tocStyle = preferences.tocStyle || 'floating';
+      if (tocStyle === 'fixed') {
+        tocElement.classList.add('toc-style-fixed');
+        document.body.classList.add('toc-style-fixed');
+      }
+
       document.body.appendChild(tocElement);
 
       // Always create the toggle button
@@ -799,7 +828,7 @@ class MDViewContentScript {
         void this.handlePreferenceChange({ showToc: false });
       });
 
-      debug.info('MDView', 'Table of Contents initialized');
+      debug.info('MDView', 'Table of Contents initialized with style:', tocStyle);
     } catch (error) {
       debug.error('MDView', 'Failed to setup TOC:', error);
     }

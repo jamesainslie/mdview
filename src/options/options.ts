@@ -102,6 +102,7 @@ class OptionsManager {
     this.setValue('toc-max-depth', preferences.tocMaxDepth || 6);
     this.setValue('toc-auto-collapse', !!preferences.tocAutoCollapse);
     this.setValue('toc-position', preferences.tocPosition || 'left');
+    this.setValue('toc-style', preferences.tocStyle || 'floating');
 
     // Diagrams
     // Use defaults
@@ -282,6 +283,7 @@ class OptionsManager {
         tocMaxDepth: this.getNumberValue('toc-max-depth') || 6,
         tocAutoCollapse: this.getCheckboxValue('toc-auto-collapse'),
         tocPosition: this.getSelectValue('toc-position') as 'left' | 'right',
+        tocStyle: this.getSelectValue('toc-style') as 'floating' | 'fixed',
 
         // Export
         exportDefaultFormat: this.getSelectValue('export-default-format') as 'docx' | 'pdf',

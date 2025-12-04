@@ -48,6 +48,7 @@ export interface AppState {
     tocMaxDepth?: number; // Max heading depth (1-6)
     tocAutoCollapse?: boolean; // Auto-collapse nested sections
     tocPosition?: 'left' | 'right'; // Position of TOC
+    tocStyle?: 'floating' | 'fixed'; // Style of TOC (floating card or fixed sidebar)
     // Export settings
     exportDefaultFormat?: 'docx' | 'pdf';
     exportDefaultPageSize?: PaperSize;
