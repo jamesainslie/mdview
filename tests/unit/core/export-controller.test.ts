@@ -2,6 +2,7 @@
  * Unit tests for Export Controller
  */
 
+/* eslint-disable @typescript-eslint/unbound-method */
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest';
 import { ExportController } from '../../../src/core/export-controller';
 import type { ExportProgress } from '../../../src/types';
@@ -44,10 +45,8 @@ describe('ExportController', () => {
     test('should complete export successfully', async () => {
       const progressUpdates: ExportProgress[] = [];
 
-      await controller.export(
-        mockContainer,
-        { format: 'docx' },
-        (progress) => progressUpdates.push(progress)
+      await controller.export(mockContainer, { format: 'docx' }, (progress) =>
+        progressUpdates.push(progress)
       );
 
       // Should have progress updates
@@ -59,10 +58,8 @@ describe('ExportController', () => {
     test('should report progress at each stage', async () => {
       const progressUpdates: ExportProgress[] = [];
 
-      await controller.export(
-        mockContainer,
-        { format: 'docx' },
-        (progress) => progressUpdates.push(progress)
+      await controller.export(mockContainer, { format: 'docx' }, (progress) =>
+        progressUpdates.push(progress)
       );
 
       // Should have stages: collecting, converting, generating, downloading
@@ -75,11 +72,14 @@ describe('ExportController', () => {
 
     test('should trigger file download', async () => {
       // Mock document.createElement to track anchor creation
-      const originalCreateElement = document.createElement.bind(document);
+      const originalCreateElement = HTMLDocument.prototype.createElement;
       const anchors: HTMLAnchorElement[] = [];
 
-      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
-        const element = originalCreateElement(tagName);
+      vi.spyOn(document, 'createElement').mockImplementation(function (
+        this: Document,
+        tagName: string
+      ) {
+        const element = originalCreateElement.call(this, tagName);
         if (tagName === 'a') {
           anchors.push(element as HTMLAnchorElement);
           // Mock click to prevent actual download
@@ -101,10 +101,8 @@ describe('ExportController', () => {
     test('should report collecting stage', async () => {
       const progressUpdates: ExportProgress[] = [];
 
-      await controller.export(
-        mockContainer,
-        { format: 'docx' },
-        (progress) => progressUpdates.push(progress)
+      await controller.export(mockContainer, { format: 'docx' }, (progress) =>
+        progressUpdates.push(progress)
       );
 
       const collectingUpdates = progressUpdates.filter((p) => p.stage === 'collecting');
@@ -114,10 +112,8 @@ describe('ExportController', () => {
     test('should report converting stage', async () => {
       const progressUpdates: ExportProgress[] = [];
 
-      await controller.export(
-        mockContainer,
-        { format: 'docx' },
-        (progress) => progressUpdates.push(progress)
+      await controller.export(mockContainer, { format: 'docx' }, (progress) =>
+        progressUpdates.push(progress)
       );
 
       const convertingUpdates = progressUpdates.filter((p) => p.stage === 'converting');
@@ -127,10 +123,8 @@ describe('ExportController', () => {
     test('should report generating stage', async () => {
       const progressUpdates: ExportProgress[] = [];
 
-      await controller.export(
-        mockContainer,
-        { format: 'docx' },
-        (progress) => progressUpdates.push(progress)
+      await controller.export(mockContainer, { format: 'docx' }, (progress) =>
+        progressUpdates.push(progress)
       );
 
       const generatingUpdates = progressUpdates.filter((p) => p.stage === 'generating');
@@ -140,10 +134,8 @@ describe('ExportController', () => {
     test('should report downloading stage', async () => {
       const progressUpdates: ExportProgress[] = [];
 
-      await controller.export(
-        mockContainer,
-        { format: 'docx' },
-        (progress) => progressUpdates.push(progress)
+      await controller.export(mockContainer, { format: 'docx' }, (progress) =>
+        progressUpdates.push(progress)
       );
 
       const downloadingUpdates = progressUpdates.filter((p) => p.stage === 'downloading');
@@ -153,10 +145,8 @@ describe('ExportController', () => {
     test('should report progress percentages correctly', async () => {
       const progressUpdates: ExportProgress[] = [];
 
-      await controller.export(
-        mockContainer,
-        { format: 'docx' },
-        (progress) => progressUpdates.push(progress)
+      await controller.export(mockContainer, { format: 'docx' }, (progress) =>
+        progressUpdates.push(progress)
       );
 
       // Progress should be increasing
@@ -172,6 +162,7 @@ describe('ExportController', () => {
   describe('Error Handling', () => {
     test('should throw on unsupported format', async () => {
       await expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
         controller.export(mockContainer, { format: 'pdf' as any })
       ).rejects.toThrow(/Unsupported export format/);
     });
@@ -209,10 +200,13 @@ describe('ExportController', () => {
   describe('Filename Handling', () => {
     test('should use provided filename', async () => {
       const anchors: HTMLAnchorElement[] = [];
-      const originalCreateElement = document.createElement.bind(document);
+      const originalCreateElement = HTMLDocument.prototype.createElement;
 
-      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
-        const element = originalCreateElement(tagName);
+      vi.spyOn(document, 'createElement').mockImplementation(function (
+        this: Document,
+        tagName: string
+      ) {
+        const element = originalCreateElement.call(this, tagName);
         if (tagName === 'a') {
           anchors.push(element as HTMLAnchorElement);
           vi.spyOn(element, 'click').mockImplementation(() => {});
@@ -230,10 +224,13 @@ describe('ExportController', () => {
 
     test('should fall back to document title', async () => {
       const anchors: HTMLAnchorElement[] = [];
-      const originalCreateElement = document.createElement.bind(document);
+      const originalCreateElement = HTMLDocument.prototype.createElement;
 
-      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
-        const element = originalCreateElement(tagName);
+      vi.spyOn(document, 'createElement').mockImplementation(function (
+        this: Document,
+        tagName: string
+      ) {
+        const element = originalCreateElement.call(this, tagName);
         if (tagName === 'a') {
           anchors.push(element as HTMLAnchorElement);
           vi.spyOn(element, 'click').mockImplementation(() => {});
@@ -249,10 +246,13 @@ describe('ExportController', () => {
 
     test('should sanitize invalid characters', async () => {
       const anchors: HTMLAnchorElement[] = [];
-      const originalCreateElement = document.createElement.bind(document);
+      const originalCreateElement = HTMLDocument.prototype.createElement;
 
-      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
-        const element = originalCreateElement(tagName);
+      vi.spyOn(document, 'createElement').mockImplementation(function (
+        this: Document,
+        tagName: string
+      ) {
+        const element = originalCreateElement.call(this, tagName);
         if (tagName === 'a') {
           anchors.push(element as HTMLAnchorElement);
           vi.spyOn(element, 'click').mockImplementation(() => {});
@@ -278,10 +278,13 @@ describe('ExportController', () => {
 
     test('should handle empty title', async () => {
       const anchors: HTMLAnchorElement[] = [];
-      const originalCreateElement = document.createElement.bind(document);
+      const originalCreateElement = HTMLDocument.prototype.createElement;
 
-      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
-        const element = originalCreateElement(tagName);
+      vi.spyOn(document, 'createElement').mockImplementation(function (
+        this: Document,
+        tagName: string
+      ) {
+        const element = originalCreateElement.call(this, tagName);
         if (tagName === 'a') {
           anchors.push(element as HTMLAnchorElement);
           vi.spyOn(element, 'click').mockImplementation(() => {});
@@ -309,6 +312,7 @@ describe('ExportController', () => {
     test('should clean up on error', async () => {
       // Try with unsupported format to trigger error
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
         await controller.export(mockContainer, { format: 'invalid' as any });
       } catch {
         // Expected to throw
@@ -340,4 +344,3 @@ describe('ExportController', () => {
     });
   });
 });
-
