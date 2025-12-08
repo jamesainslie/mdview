@@ -99,7 +99,7 @@ const githubLight: Theme = {
       actorTextColor: '#24292f',
       actorLineColor: '#d0d7de',
       signalColor: '#24292f',
-      signalTextColor: '#ffffff',
+      signalTextColor: '#24292f',
       labelBoxBkgColor: '#f6f8fa',
       labelBoxBorderColor: '#d0d7de',
       labelTextColor: '#24292f',
@@ -115,4 +115,3 @@ const githubLight: Theme = {
 };
 
 export default githubLight;
-
