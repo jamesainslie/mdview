@@ -176,7 +176,22 @@ body.mdview-active {
 
 /* Progressive Hydration - Sections */
 .mdview-section {
-  margin-bottom: 24px;
+  margin-bottom: 0;
+}
+
+/* First heading in a section should not have top margin (section spacing handles it) */
+.mdview-section > h1:first-child,
+.mdview-section > h2:first-child,
+.mdview-section > h3:first-child,
+.mdview-section > h4:first-child,
+.mdview-section > h5:first-child,
+.mdview-section > h6:first-child {
+  margin-top: 24px;
+}
+
+/* Last element in a section should not have bottom margin */
+.mdview-section > *:last-child {
+  margin-bottom: 0;
 }
 
 /* Skeleton state (before hydration) - NO VISUAL DISTRACTION */
@@ -187,6 +202,7 @@ body.mdview-active {
 /* Hydrated state (after content loaded) */
 .mdview-section-hydrated {
   opacity: 1;
+  min-height: auto !important; /* Override skeleton inline min-height */
 }
 
 /* Section placeholder - HIDDEN for clean reading experience */
@@ -703,7 +719,7 @@ img[loading="lazy"].loaded {
 /* Mermaid Diagrams */
 .mermaid-container {
   position: relative;
-  margin: 24px 0;
+  margin: 16px 0;
   padding: 20px;
   background-color: var(--md-bg);
   border: 1px solid var(--md-border);

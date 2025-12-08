@@ -21,13 +21,14 @@ export class SkeletonRenderer {
    */
   static generateSkeleton(sections: MarkdownSection[]): string {
     debug.log('SkeletonRenderer', `Generating skeleton for ${sections.length} sections`);
-    
-    const skeletonHtml = sections.map(section => {
-      // Estimate height based on content length
-      // ~0.3px per character is a rough estimate
-      const estimatedHeight = Math.max(100, Math.min(section.markdown.length * 0.3, 2000));
-      
-      return `
+
+    const skeletonHtml = sections
+      .map((section) => {
+        // Estimate height based on content length
+        // ~0.3px per character is a rough estimate
+        const estimatedHeight = Math.max(100, Math.min(section.markdown.length * 0.3, 2000));
+
+        return `
         <div 
           class="mdview-section mdview-section-skeleton" 
           id="${section.id}" 
@@ -35,18 +36,23 @@ export class SkeletonRenderer {
           data-hydrated="false"
           style="min-height: ${estimatedHeight}px;"
         >
-          ${section.heading ? `
+          ${
+            section.heading
+              ? `
             <h${section.level || 2} class="section-heading">
               ${this.escapeHtml(section.heading)}
             </h${section.level || 2}>
-          ` : ''}
+          `
+              : ''
+          }
           <div class="section-placeholder">
             <div class="placeholder-shimmer"></div>
           </div>
         </div>
       `;
-    }).join('\n');
-    
+      })
+      .join('\n');
+
     debug.log('SkeletonRenderer', 'Skeleton generated');
     return skeletonHtml;
   }
@@ -65,7 +71,10 @@ export class SkeletonRenderer {
     sectionElement.dataset.hydrated = 'true';
     sectionElement.classList.remove('mdview-section-skeleton');
     sectionElement.classList.add('mdview-section-hydrated');
-    
+
+    // Remove skeleton min-height (let content determine height)
+    sectionElement.style.minHeight = '';
+
     // Remove placeholder
     const placeholder = sectionElement.querySelector('.section-placeholder');
     if (placeholder) {
@@ -90,5 +99,3 @@ export class SkeletonRenderer {
     return div.innerHTML;
   }
 }
-
-
