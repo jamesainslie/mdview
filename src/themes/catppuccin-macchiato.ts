@@ -87,6 +87,7 @@ const catppuccinMacchiato: Theme = {
       secondaryBkg: '#181926',
       tertiaryBkg: '#24273a',
       textColor: '#cad3f5',
+      tertiaryTextColor: '#cad3f5',
       nodeBkg: '#1e2030',
       nodeBorder: '#363a4f',
       clusterBkg: '#181926',
@@ -94,9 +95,13 @@ const catppuccinMacchiato: Theme = {
       defaultLinkColor: '#8aadf4',
       titleColor: '#cad3f5',
       edgeLabelBackground: '#24273a',
+      // ER diagram specific
+      relationLabelColor: '#cad3f5',
+      relationLabelBackground: '#24273a',
+      attributeBackgroundColorOdd: '#1e2030',
+      attributeBackgroundColorEven: '#181926',
     },
   },
 };
 
 export default catppuccinMacchiato;
-

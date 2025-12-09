@@ -87,6 +87,7 @@ const githubDark: Theme = {
       secondaryBkg: '#21262d',
       tertiaryBkg: '#0d1117',
       textColor: '#c9d1d9',
+      tertiaryTextColor: '#c9d1d9',
       nodeBkg: '#161b22',
       nodeBorder: '#30363d',
       clusterBkg: '#21262d',
@@ -94,6 +95,11 @@ const githubDark: Theme = {
       defaultLinkColor: '#58a6ff',
       titleColor: '#c9d1d9',
       edgeLabelBackground: '#0d1117',
+      // ER diagram specific
+      relationLabelColor: '#c9d1d9',
+      relationLabelBackground: '#0d1117',
+      attributeBackgroundColorOdd: '#161b22',
+      attributeBackgroundColorEven: '#21262d',
       actorBorder: '#30363d',
       actorBkg: '#161b22',
       actorTextColor: '#c9d1d9',
@@ -115,4 +121,3 @@ const githubDark: Theme = {
 };
 
 export default githubDark;
-

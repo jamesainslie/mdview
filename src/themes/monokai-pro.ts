@@ -87,6 +87,7 @@ const monokaiPro: Theme = {
       secondaryBkg: '#5b595c',
       tertiaryBkg: '#2d2a2e',
       textColor: '#fcfcfa',
+      tertiaryTextColor: '#fcfcfa',
       nodeBkg: '#403e41',
       nodeBorder: '#5b595c',
       clusterBkg: '#5b595c',
@@ -94,9 +95,13 @@ const monokaiPro: Theme = {
       defaultLinkColor: '#78dce8',
       titleColor: '#fcfcfa',
       edgeLabelBackground: '#2d2a2e',
+      // ER diagram specific
+      relationLabelColor: '#fcfcfa',
+      relationLabelBackground: '#2d2a2e',
+      attributeBackgroundColorOdd: '#403e41',
+      attributeBackgroundColorEven: '#5b595c',
     },
   },
 };
 
 export default monokaiPro;
-

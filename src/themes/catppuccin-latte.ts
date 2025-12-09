@@ -87,6 +87,7 @@ const catppuccinLatte: Theme = {
       secondaryBkg: '#dce0e8',
       tertiaryBkg: '#eff1f5',
       textColor: '#4c4f69',
+      tertiaryTextColor: '#4c4f69',
       nodeBkg: '#e6e9ef',
       nodeBorder: '#dce0e8',
       clusterBkg: '#dce0e8',
@@ -94,9 +95,13 @@ const catppuccinLatte: Theme = {
       defaultLinkColor: '#1e66f5',
       titleColor: '#4c4f69',
       edgeLabelBackground: '#eff1f5',
+      // ER diagram specific
+      relationLabelColor: '#4c4f69',
+      relationLabelBackground: '#eff1f5',
+      attributeBackgroundColorOdd: '#e6e9ef',
+      attributeBackgroundColorEven: '#dce0e8',
     },
   },
 };
 
 export default catppuccinLatte;
-

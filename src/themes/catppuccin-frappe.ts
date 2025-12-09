@@ -87,6 +87,7 @@ const catppuccinFrappe: Theme = {
       secondaryBkg: '#232634',
       tertiaryBkg: '#303446',
       textColor: '#c6d0f5',
+      tertiaryTextColor: '#c6d0f5',
       nodeBkg: '#292c3c',
       nodeBorder: '#414559',
       clusterBkg: '#232634',
@@ -94,9 +95,13 @@ const catppuccinFrappe: Theme = {
       defaultLinkColor: '#8caaee',
       titleColor: '#c6d0f5',
       edgeLabelBackground: '#303446',
+      // ER diagram specific
+      relationLabelColor: '#c6d0f5',
+      relationLabelBackground: '#303446',
+      attributeBackgroundColorOdd: '#292c3c',
+      attributeBackgroundColorEven: '#232634',
     },
   },
 };
 
 export default catppuccinFrappe;
-

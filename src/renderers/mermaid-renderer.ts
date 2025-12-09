@@ -46,6 +46,13 @@ export class MermaidRenderer {
       maxTextSize: 50000,
       maxEdges: 500,
       theme: 'base',
+      themeVariables: {
+        // Default light theme variables to ensure text is visible
+        textColor: '#24292f',
+        tertiaryTextColor: '#24292f',
+        primaryTextColor: '#24292f',
+        lineColor: '#24292f',
+      },
       flowchart: {
         htmlLabels: false,
         useMaxWidth: true,
@@ -54,6 +61,9 @@ export class MermaidRenderer {
         useMaxWidth: true,
       },
       gantt: {
+        useMaxWidth: true,
+      },
+      er: {
         useMaxWidth: true,
       },
     });
@@ -92,13 +102,20 @@ export class MermaidRenderer {
   updateTheme(config: MermaidThemeConfig): void {
     debug.info('MermaidRenderer', `Updating theme to ${config.theme}`);
 
+    // Ensure ER diagram text colors are set correctly
+    const themeVars = {
+      ...config.themeVariables,
+      // Ensure tertiary text color matches text color for ER diagrams
+      tertiaryTextColor: config.themeVariables.tertiaryTextColor || config.themeVariables.textColor,
+    };
+
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
       maxTextSize: 50000,
       maxEdges: 500,
       theme: config.theme,
-      themeVariables: config.themeVariables,
+      themeVariables: themeVars,
       flowchart: {
         htmlLabels: false,
         useMaxWidth: true,
@@ -107,6 +124,9 @@ export class MermaidRenderer {
         useMaxWidth: true,
       },
       gantt: {
+        useMaxWidth: true,
+      },
+      er: {
         useMaxWidth: true,
       },
     });

@@ -87,6 +87,7 @@ const catppuccinMocha: Theme = {
       secondaryBkg: '#11111b',
       tertiaryBkg: '#1e1e2e',
       textColor: '#cdd6f4',
+      tertiaryTextColor: '#cdd6f4',
       nodeBkg: '#181825',
       nodeBorder: '#313244',
       clusterBkg: '#11111b',
@@ -94,9 +95,13 @@ const catppuccinMocha: Theme = {
       defaultLinkColor: '#89b4fa',
       titleColor: '#cdd6f4',
       edgeLabelBackground: '#1e1e2e',
+      // ER diagram specific
+      relationLabelColor: '#cdd6f4',
+      relationLabelBackground: '#1e1e2e',
+      attributeBackgroundColorOdd: '#181825',
+      attributeBackgroundColorEven: '#11111b',
     },
   },
 };
 
 export default catppuccinMocha;
-

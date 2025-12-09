@@ -746,6 +746,79 @@ img[loading="lazy"].loaded {
   height: auto;
 }
 
+/* ER Diagram relationship label text fix - ensure text is visible */
+.mermaid-rendered svg .relationshipLabelBox + text,
+.mermaid-rendered svg .relationshipLabel text,
+.mermaid-rendered svg .relationshipLabel tspan,
+.mermaid-rendered svg g.relationshipLabel text,
+.mermaid-rendered svg g.relationshipLabel tspan,
+.mermaid-rendered svg .er .relationshipLabel text,
+.mermaid-rendered svg .er .relationshipLabel tspan,
+.mermaid-rendered svg [class*="relationshipLabel"] text,
+.mermaid-rendered svg [class*="relationshipLabel"] tspan,
+.mermaid-rendered svg .edgeLabel text,
+.mermaid-rendered svg .edgeLabel tspan,
+.mermaid-rendered svg .label text,
+.mermaid-rendered svg .label tspan,
+.mermaid-rendered svg text.relationshipLabel,
+.mermaid-rendered svg tspan.relationshipLabel {
+  fill: var(--md-fg) !important;
+}
+
+/* ER Diagram relationship label background box */
+.mermaid-rendered svg .relationshipLabelBox,
+.mermaid-rendered svg rect.relationshipLabelBox,
+.mermaid-rendered svg .er .relationshipLabel rect,
+.mermaid-rendered svg g.relationshipLabel rect,
+.mermaid-rendered svg [class*="relationshipLabel"] rect {
+  fill: var(--md-bg) !important;
+  stroke: var(--md-border) !important;
+}
+
+/* Ensure all text in ER diagrams is visible */
+.mermaid-rendered svg .entityBox + text,
+.mermaid-rendered svg .er text,
+.mermaid-rendered svg .erDiagram text {
+  fill: var(--md-fg);
+}
+
+/* Force ALL text elements in mermaid SVG to have visible fill */
+/* This catches any text that might not have fill set */
+.mermaid-rendered svg text:not([fill]),
+.mermaid-rendered svg tspan:not([fill]) {
+  fill: var(--md-fg);
+}
+
+/* Override any inherited or inline fill:none on text */
+.mermaid-rendered svg text[fill="none"],
+.mermaid-rendered svg text[fill="transparent"],
+.mermaid-rendered svg text[fill=""],
+.mermaid-rendered svg tspan[fill="none"],
+.mermaid-rendered svg tspan[fill="transparent"],
+.mermaid-rendered svg tspan[fill=""] {
+  fill: var(--md-fg) !important;
+}
+
+/* Force fill on ALL mermaid text that might have inline style overriding */
+.mermaid-rendered svg g > text,
+.mermaid-rendered svg g > g > text {
+  fill: var(--md-fg);
+}
+
+/* Handle foreignObject HTML content (used by some mermaid diagrams) */
+.mermaid-rendered svg foreignObject,
+.mermaid-rendered svg foreignObject * {
+  color: var(--md-fg);
+}
+
+/* Specific ER diagram selectors based on mermaid's output structure */
+.mermaid-rendered svg g[id^="rel"] text,
+.mermaid-rendered svg g[class*="relationship"] text,
+.mermaid-rendered svg .relationshipLine + g text,
+.mermaid-rendered svg path + g text {
+  fill: var(--md-fg) !important;
+}
+
 .mermaid-controls {
   position: absolute;
   top: 10px;
