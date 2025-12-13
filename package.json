@@ -50,6 +50,9 @@
     "vite": "^7.2.6",
     "vitest": "^4.0.15"
   },
+  "overrides": {
+    "rollup": "^4.43.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jamesainslie/mdview.git"
