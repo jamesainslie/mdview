@@ -3,9 +3,10 @@
   "version": "0.3.3",
   "description": "Beautiful Chrome extension for viewing Markdown files with themes, syntax highlighting, and interactive Mermaid diagrams",
   "type": "module",
+  "packageManager": "bun@1.3.4",
   "scripts": {
     "dev": "vite build --watch",
-    "build": "node scripts/update-manifest-version.js && tsc && vite build && node scripts/fix-manifest.js",
+    "build": "bun scripts/update-manifest-version.js && tsc && vite build && bun scripts/fix-manifest.js",
     "build:test": "MDVIEW_TESTING=true vite build",
     "export:docx": "tsx scripts/export-docx-mermaid-cli.ts",
     "preview": "vite preview",

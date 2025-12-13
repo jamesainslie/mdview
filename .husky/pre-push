@@ -1,5 +1,5 @@
 echo "Running tests before push..."
-npm run test:ci
+bun run test:ci
 
 if [ $? -ne 0 ]; then
   echo ""

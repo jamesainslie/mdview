@@ -25,18 +25,18 @@ help:
 # Install dependencies
 install:
 	@echo "Installing dependencies..."
-	npm install
+	bun install
 
 # Build the extension
 build:
 	@echo "Building extension..."
-	npm run build
+	bun run build
 	@echo "Build complete! Extension is ready in dist/"
 
 # Development mode with watch
 dev:
 	@echo "Starting development mode (watch)..."
-	npm run dev
+	bun run dev
 
 # Clean build artifacts
 clean:
@@ -48,35 +48,35 @@ clean:
 # Run tests in watch mode
 test:
 	@echo "Running tests in watch mode..."
-	npm run test
+	bun run test
 
 # Run tests once (CI mode)
 test-ci:
 	@echo "Running tests (CI mode)..."
-	npm run test:ci
+	bun run test:ci
 
 # Lint code
 lint:
 	@echo "Linting code..."
-	npm run lint
+	bun run lint
 
 # Format code
 format:
 	@echo "Formatting code..."
-	npm run format
+	bun run format
 
 # Generate icons
 icons:
 	@echo "Generating icons..."
-	node scripts/generate-icons.js
+	bun scripts/generate-icons.js
 	@echo "Icons generated!"
 
 # Create distribution zip
 dist-zip: build
 	@echo "Creating distribution zip..."
 	@mkdir -p releases
-	cd dist && zip -r ../releases/mdview-$(shell node -p "require('./package.json').version").zip .
-	@echo "Distribution zip created: releases/mdview-$(shell node -p "require('./package.json').version").zip"
+	cd dist && zip -r ../releases/mdview-$(shell bun -p "require('./package.json').version").zip .
+	@echo "Distribution zip created: releases/mdview-$(shell bun -p "require('./package.json').version").zip"
 
 # Rebuild from scratch
 rebuild: clean build

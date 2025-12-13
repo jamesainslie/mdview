@@ -1,6 +1,6 @@
-import { test, expect, chromium } from 'playwright/test';
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+import { chromium, expect, test } from 'playwright/test';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
