@@ -3,7 +3,7 @@
  * Manages popup UI and interactions
  */
 
-import type { AppState, ThemeName, LogLevel, UpdateState } from '../types';
+import type { AppState, LogLevel, ThemeName, UpdateState } from '../types';
 import { debug } from '../utils/debug-logger';
 
 class PopupManager {
