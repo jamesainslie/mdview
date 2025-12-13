@@ -1,5 +1,5 @@
-import { debug } from '../utils/debug-logger';
 import type { UpdateClient, UpdateState, UpdateStatus } from '../types';
+import { debug } from '../utils/debug-logger';
 
 const UPDATE_STATE_STORAGE_KEY = 'updateState';
 const DEFAULT_COOLDOWN_MS = 30 * 60 * 1000;

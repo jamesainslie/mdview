@@ -3,11 +3,11 @@
  * Handles state management, message passing, coordination, and cache management
  */
 
-import type { AppState, ThemeName } from '../types';
 import { CacheManager } from '../core/cache-manager';
-import { debug } from '../utils/debug-logger';
 import { UpdateManager } from '../core/update-manager';
 import { ChromeUpdateClient, TestUpdateClient } from '../core/update/update-clients';
+import type { AppState, ThemeName } from '../types';
+import { debug } from '../utils/debug-logger';
 
 // Default state
 const defaultState: AppState = {

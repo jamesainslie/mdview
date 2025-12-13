@@ -23,6 +23,9 @@ class PopupManager {
     // Get current tab info for site blocking
     await this.loadCurrentTabInfo();
 
+    // Always paint updates UI even if state load failed.
+    this.updateUpdatesUI();
+
     // Update UI with current state
     this.updateUI();
 
@@ -105,6 +108,9 @@ class PopupManager {
   }
 
   private updateUI(): void {
+    // Updates UI should not depend on the preferences state load.
+    this.updateUpdatesUI();
+
     if (!this.state) return;
 
     const { preferences } = this.state;
@@ -159,7 +165,6 @@ class PopupManager {
 
     // Update site blocking section
     this.updateSiteBlockingUI();
-    this.updateUpdatesUI();
   }
 
   private updateUpdatesUI(): void {

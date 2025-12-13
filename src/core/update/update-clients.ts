@@ -1,5 +1,5 @@
+import type { UpdateCheckResult, UpdateClient, UpdateTestScenario } from '../../types';
 import { debug } from '../../utils/debug-logger';
-import type { UpdateClient, UpdateCheckResult, UpdateTestScenario } from '../../types';
 
 export class ChromeUpdateClient implements UpdateClient {
   requestUpdateCheck(): Promise<UpdateCheckResult> {
