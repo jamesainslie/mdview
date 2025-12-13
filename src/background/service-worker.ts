@@ -182,10 +182,17 @@ chrome.runtime.onMessage.addListener(
             break;
 
           case 'UPDATE_GET_STATE':
+            debug.debug('MDView', 'Update state requested');
             sendResponse({ updateState: updateManager.getState() });
             break;
 
           case 'UPDATE_CHECK':
+            debug.info('MDView', 'Manual update check requested', {
+              force:
+                typeof message.payload === 'object' &&
+                message.payload !== null &&
+                (message.payload as { force?: unknown }).force === true,
+            });
             sendResponse({
               updateState: await updateManager.checkNow({
                 force:
@@ -197,6 +204,7 @@ chrome.runtime.onMessage.addListener(
             break;
 
           case 'UPDATE_APPLY':
+            debug.info('MDView', 'Apply update requested');
             sendResponse(updateManager.applyNow());
             break;
 
@@ -206,6 +214,10 @@ chrome.runtime.onMessage.addListener(
             debug.log('MDView-Background', 'Processing UPDATE_PREFERENCES:', preferences);
 
             await stateManager.updatePreferences(preferences);
+            if (preferences.logLevel) {
+              debug.setLogLevel(preferences.logLevel);
+              debug.info('MDView-Background', 'Log level updated:', preferences.logLevel);
+            }
             sendResponse({ success: true });
 
             // Always broadcast preference updates to tabs so they can react (e.g. line numbers)

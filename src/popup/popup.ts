@@ -429,6 +429,7 @@ class PopupManager {
 
   private async handleUpdateCheck(): Promise<void> {
     try {
+      debug.info('Popup', 'User requested update check');
       this.updateState = { status: 'checking', lastCheckedAt: Date.now() };
       this.updateUpdatesUI();
 
@@ -437,8 +438,10 @@ class PopupManager {
         payload: { force: true },
       });
       this.updateState = (response as { updateState: UpdateState }).updateState;
+      debug.info('Popup', 'Update check completed', this.updateState);
       this.updateUpdatesUI();
     } catch (error) {
+      debug.error('Popup', 'Update check failed:', error);
       this.updateState = { status: 'error', lastError: String(error) };
       this.updateUpdatesUI();
     }
@@ -446,9 +449,11 @@ class PopupManager {
 
   private async handleUpdateApply(): Promise<void> {
     try {
+      debug.info('Popup', 'User requested apply update');
       const response: unknown = await chrome.runtime.sendMessage({ type: 'UPDATE_APPLY' });
       const result = response as { ok: boolean; error?: string };
       if (!result.ok) {
+        debug.warn('Popup', 'Update apply rejected:', result.error);
         this.updateState = { status: 'error', lastError: result.error ?? 'Update apply failed' };
         this.updateUpdatesUI();
         return;
@@ -456,9 +461,11 @@ class PopupManager {
 
       // In production, this triggers chrome.runtime.reload() and the popup will close.
       // In tests, the test client records the reload in storage for assertions.
+      debug.info('Popup', 'Update apply requested successfully');
       this.updateState = { status: 'idle' };
       this.updateUpdatesUI();
     } catch (error) {
+      debug.error('Popup', 'Update apply failed:', error);
       this.updateState = { status: 'error', lastError: String(error) };
       this.updateUpdatesUI();
     }
