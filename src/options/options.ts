@@ -102,7 +102,7 @@ class OptionsManager {
     this.setValue('toc-max-depth', preferences.tocMaxDepth || 6);
     this.setValue('toc-auto-collapse', !!preferences.tocAutoCollapse);
     this.setValue('toc-position', preferences.tocPosition || 'left');
-    this.setValue('toc-style', preferences.tocStyle || 'floating');
+    this.setValue('toc-style', preferences.tocStyle || 'fixed');
 
     // Diagrams
     // Use defaults

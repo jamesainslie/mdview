@@ -801,7 +801,7 @@ class MDViewContentScript {
       const tocElement = this.tocRenderer.render(headings);
 
       // Apply TOC style class
-      const tocStyle = preferences.tocStyle || 'floating';
+      const tocStyle = preferences.tocStyle || 'fixed';
       if (tocStyle === 'fixed') {
         tocElement.classList.add('toc-style-fixed');
         document.body.classList.add('toc-style-fixed');
