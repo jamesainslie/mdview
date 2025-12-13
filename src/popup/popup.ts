@@ -183,6 +183,7 @@ class PopupManager {
     };
 
     statusEl.textContent = statusTextMap[state.status] ?? 'Unknown';
+    statusEl.setAttribute('data-status', state.status);
 
     if (state.status === 'error' && state.lastError) {
       metaEl.textContent = state.lastError;
@@ -191,6 +192,8 @@ class PopupManager {
     } else {
       metaEl.textContent = '';
     }
+
+    metaEl.classList.toggle('is-empty', metaEl.textContent.trim().length === 0);
 
     checkBtn.disabled = state.status === 'checking';
 
@@ -208,8 +211,7 @@ class PopupManager {
 
     if (!toggleBtn) return;
 
-    // Always keep the icon text (🚫), only change state and tooltip
-    toggleBtn.textContent = '🚫';
+    // Icon is SVG; only change state and tooltip
 
     // For local files, disable the button
     if (!this.currentTabHostname) {
