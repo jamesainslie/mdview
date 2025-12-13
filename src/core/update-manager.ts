@@ -8,6 +8,10 @@ export interface UpdateManagerOptions {
   cooldownMs?: number;
 }
 
+export interface UpdateCheckOptions {
+  force?: boolean;
+}
+
 /**
  * UpdateManager
  *
@@ -59,15 +63,16 @@ export class UpdateManager {
    *
    * This is rate-limited to reduce throttling and unnecessary calls.
    */
-  async checkNow(): Promise<UpdateState> {
+  async checkNow(options: UpdateCheckOptions = {}): Promise<UpdateState> {
     const now = Date.now();
     const lastCheckedAt = this.state.lastCheckedAt ?? 0;
+    const force = options.force === true;
 
     if (this.state.status === 'checking') {
       return this.getState();
     }
 
-    if (now - lastCheckedAt < this.cooldownMs) {
+    if (!force && now - lastCheckedAt < this.cooldownMs) {
       // Return cached state if the last check is recent.
       return this.getState();
     }

@@ -185,7 +185,14 @@ chrome.runtime.onMessage.addListener(
             break;
 
           case 'UPDATE_CHECK':
-            sendResponse({ updateState: await updateManager.checkNow() });
+            sendResponse({
+              updateState: await updateManager.checkNow({
+                force:
+                  typeof message.payload === 'object' &&
+                  message.payload !== null &&
+                  (message.payload as { force?: unknown }).force === true,
+              }),
+            });
             break;
 
           case 'UPDATE_APPLY':

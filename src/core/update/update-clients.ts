@@ -6,6 +6,12 @@ export class ChromeUpdateClient implements UpdateClient {
     return new Promise((resolve, reject) => {
       try {
         chrome.runtime.requestUpdateCheck((status) => {
+          const err = chrome.runtime.lastError;
+          if (err) {
+            reject(new Error(err.message));
+            return;
+          }
+
           // status is: "throttled" | "no_update" | "update_available"
           resolve(status as UpdateCheckResult);
         });

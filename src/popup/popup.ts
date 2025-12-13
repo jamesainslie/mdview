@@ -427,7 +427,10 @@ class PopupManager {
       this.updateState = { status: 'checking', lastCheckedAt: Date.now() };
       this.updateUpdatesUI();
 
-      const response: unknown = await chrome.runtime.sendMessage({ type: 'UPDATE_CHECK' });
+      const response: unknown = await chrome.runtime.sendMessage({
+        type: 'UPDATE_CHECK',
+        payload: { force: true },
+      });
       this.updateState = (response as { updateState: UpdateState }).updateState;
       this.updateUpdatesUI();
     } catch (error) {
