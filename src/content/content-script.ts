@@ -4,12 +4,12 @@
  */
 
 // CSS is imported but only activated when we add .mdview-active to body
-import './content.css';
-import { FileScanner } from '../utils/file-scanner';
 import type { AppState } from '../types';
-import { debug } from '../utils/debug-logger';
-import { TocRenderer } from '../ui/toc-renderer';
 import type { ExportUI } from '../ui/export-ui';
+import { TocRenderer } from '../ui/toc-renderer';
+import { debug } from '../utils/debug-logger';
+import { FileScanner } from '../utils/file-scanner';
+import './content.css';
 
 // Fix Vite's dynamic import base path for Chrome extensions
 // Override import.meta to use chrome-extension:// base URL

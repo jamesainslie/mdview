@@ -90,6 +90,12 @@ class PopupManager {
     try {
       const response: unknown = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
       this.state = (response as { state: AppState }).state;
+
+      // Sync logger level from loaded preferences so logs actually appear
+      if (this.state?.preferences?.logLevel) {
+        debug.setLogLevel(this.state.preferences.logLevel);
+      }
+
       debug.log('Popup', 'State loaded:', this.state);
     } catch (error) {
       debug.error('Popup', 'Failed to load state:', error);

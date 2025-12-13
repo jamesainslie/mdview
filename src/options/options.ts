@@ -3,7 +3,7 @@
  * Manages settings page UI and interactions
  */
 
-import type { AppState, ThemeName, LogLevel, PaperSize } from '../types';
+import type { AppState, LogLevel, PaperSize, ThemeName } from '../types';
 import { debug } from '../utils/debug-logger';
 
 class OptionsManager {
@@ -72,6 +72,12 @@ class OptionsManager {
     try {
       const response: unknown = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
       this.state = (response as { state: AppState }).state;
+
+      // Sync logger level from loaded preferences so logs actually appear
+      if (this.state?.preferences?.logLevel) {
+        debug.setLogLevel(this.state.preferences.logLevel);
+      }
+
       debug.log('Options', 'State loaded:', this.state);
     } catch (error) {
       debug.error('Options', 'Failed to load state:', error);
