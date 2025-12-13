@@ -3,18 +3,22 @@
  * Manages popup UI and interactions
  */
 
-import type { AppState, ThemeName, LogLevel } from '../types';
+import type { AppState, ThemeName, LogLevel, UpdateState } from '../types';
 import { debug } from '../utils/debug-logger';
 
 class PopupManager {
   private state: AppState | null = null;
   private currentTabHostname: string | null = null;
+  private updateState: UpdateState | null = null;
 
   async initialize(): Promise<void> {
     debug.log('Popup', 'Initializing...');
 
     // Load state
     await this.loadState();
+
+    // Load update state
+    await this.loadUpdateState();
 
     // Get current tab info for site blocking
     await this.loadCurrentTabInfo();
@@ -89,6 +93,17 @@ class PopupManager {
     }
   }
 
+  private async loadUpdateState(): Promise<void> {
+    try {
+      const response: unknown = await chrome.runtime.sendMessage({ type: 'UPDATE_GET_STATE' });
+      this.updateState = (response as { updateState: UpdateState }).updateState;
+      debug.log('Popup', 'Update state loaded:', this.updateState);
+    } catch (error) {
+      debug.error('Popup', 'Failed to load update state:', error);
+      this.updateState = { status: 'error', lastError: String(error) };
+    }
+  }
+
   private updateUI(): void {
     if (!this.state) return;
 
@@ -144,6 +159,48 @@ class PopupManager {
 
     // Update site blocking section
     this.updateSiteBlockingUI();
+    this.updateUpdatesUI();
+  }
+
+  private updateUpdatesUI(): void {
+    const statusEl = document.getElementById('update-status');
+    const metaEl = document.getElementById('update-meta');
+    const checkBtn = document.getElementById('btn-update-check') as HTMLButtonElement | null;
+    const applyBtn = document.getElementById('btn-update-apply') as HTMLButtonElement | null;
+
+    if (!statusEl || !metaEl || !checkBtn || !applyBtn) return;
+
+    const state = this.updateState ?? { status: 'unknown' };
+
+    const statusTextMap: Record<UpdateState['status'], string> = {
+      unknown: 'Unknown',
+      idle: 'Idle',
+      checking: 'Checking',
+      no_update: 'Up to date',
+      update_available: 'Update available',
+      throttled: 'Throttled',
+      error: 'Error',
+    };
+
+    statusEl.textContent = statusTextMap[state.status] ?? 'Unknown';
+
+    if (state.status === 'error' && state.lastError) {
+      metaEl.textContent = state.lastError;
+    } else if (state.lastCheckedAt) {
+      metaEl.textContent = `Last checked: ${new Date(state.lastCheckedAt).toLocaleString()}`;
+    } else {
+      metaEl.textContent = '';
+    }
+
+    checkBtn.disabled = state.status === 'checking';
+
+    if (state.status === 'update_available') {
+      applyBtn.style.display = 'inline-flex';
+      applyBtn.disabled = false;
+    } else {
+      applyBtn.style.display = 'none';
+      applyBtn.disabled = true;
+    }
   }
 
   private updateSiteBlockingUI(): void {
@@ -338,12 +395,62 @@ class PopupManager {
       });
     }
 
+    // Updates: check for updates
+    const btnUpdateCheck = document.getElementById('btn-update-check') as HTMLButtonElement | null;
+    if (btnUpdateCheck) {
+      btnUpdateCheck.addEventListener('click', () => {
+        void this.handleUpdateCheck();
+      });
+    }
+
+    // Updates: apply update
+    const btnUpdateApply = document.getElementById('btn-update-apply') as HTMLButtonElement | null;
+    if (btnUpdateApply) {
+      btnUpdateApply.addEventListener('click', () => {
+        void this.handleUpdateApply();
+      });
+    }
+
     // Site block toggle button
     const btnToggleSiteBlock = document.getElementById('btn-toggle-site-block');
     if (btnToggleSiteBlock) {
       btnToggleSiteBlock.addEventListener('click', () => {
         void this.toggleCurrentSiteBlocked();
       });
+    }
+  }
+
+  private async handleUpdateCheck(): Promise<void> {
+    try {
+      this.updateState = { status: 'checking', lastCheckedAt: Date.now() };
+      this.updateUpdatesUI();
+
+      const response: unknown = await chrome.runtime.sendMessage({ type: 'UPDATE_CHECK' });
+      this.updateState = (response as { updateState: UpdateState }).updateState;
+      this.updateUpdatesUI();
+    } catch (error) {
+      this.updateState = { status: 'error', lastError: String(error) };
+      this.updateUpdatesUI();
+    }
+  }
+
+  private async handleUpdateApply(): Promise<void> {
+    try {
+      const response: unknown = await chrome.runtime.sendMessage({ type: 'UPDATE_APPLY' });
+      const result = response as { ok: boolean; error?: string };
+      if (!result.ok) {
+        this.updateState = { status: 'error', lastError: result.error ?? 'Update apply failed' };
+        this.updateUpdatesUI();
+        return;
+      }
+
+      // In production, this triggers chrome.runtime.reload() and the popup will close.
+      // In tests, the test client records the reload in storage for assertions.
+      this.updateState = { status: 'idle' };
+      this.updateUpdatesUI();
+    } catch (error) {
+      this.updateState = { status: 'error', lastError: String(error) };
+      this.updateUpdatesUI();
     }
   }
 
