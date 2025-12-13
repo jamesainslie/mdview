@@ -6,6 +6,8 @@
 import type { AppState, ThemeName } from '../types';
 import { CacheManager } from '../core/cache-manager';
 import { debug } from '../utils/debug-logger';
+import { UpdateManager } from '../core/update-manager';
+import { ChromeUpdateClient, TestUpdateClient } from '../core/update/update-clients';
 
 // Default state
 const defaultState: AppState = {
@@ -131,8 +133,15 @@ class StateManager {
 
 const stateManager = new StateManager();
 
+const isTesting = typeof __MDVIEW_TESTING__ !== 'undefined' && __MDVIEW_TESTING__ === true;
+const updateClient = isTesting ? new TestUpdateClient() : new ChromeUpdateClient();
+const updateManager = new UpdateManager(updateClient);
+
 // Initialize immediately when service worker loads
-const initializationPromise = stateManager.initialize();
+const initializationPromise = Promise.all([
+  stateManager.initialize(),
+  updateManager.initialize(),
+]).then(() => undefined);
 
 // Initialize on install
 chrome.runtime.onInstalled.addListener((details) => {
@@ -169,6 +178,18 @@ chrome.runtime.onMessage.addListener(
         switch (message.type) {
           case 'GET_STATE':
             sendResponse({ state: await stateManager.getState() });
+            break;
+
+          case 'UPDATE_GET_STATE':
+            sendResponse({ updateState: updateManager.getState() });
+            break;
+
+          case 'UPDATE_CHECK':
+            sendResponse({ updateState: await updateManager.checkNow() });
+            break;
+
+          case 'UPDATE_APPLY':
+            sendResponse(updateManager.applyNow());
             break;
 
           case 'UPDATE_PREFERENCES': {
@@ -346,7 +367,10 @@ chrome.runtime.onMessage.addListener(
 
 // Export for debugging
 if (typeof window !== 'undefined') {
-  (window as { mdviewState?: StateManager }).mdviewState = stateManager;
+  (window as { mdviewState?: StateManager; mdviewUpdates?: UpdateManager }).mdviewState =
+    stateManager;
+  (window as { mdviewState?: StateManager; mdviewUpdates?: UpdateManager }).mdviewUpdates =
+    updateManager;
 }
 
 debug.log('MDView', 'Service worker initialized');

@@ -5,6 +5,7 @@
  */
 declare global {
   const __APP_VERSION__: string;
+  const __MDVIEW_TESTING__: boolean;
 
   interface Window {
     __MDVIEW_MERMAID_CODE__?: Map<string, string>;
@@ -23,6 +24,31 @@ export type ThemeName =
   | 'test-theme'; // For testing
 
 export type LogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
+
+export type UpdateStatus =
+  | 'unknown'
+  | 'idle'
+  | 'checking'
+  | 'no_update'
+  | 'update_available'
+  | 'throttled'
+  | 'error';
+
+export interface UpdateState {
+  status: UpdateStatus;
+  lastCheckedAt?: number;
+  lastResultAt?: number;
+  lastError?: string;
+}
+
+export type UpdateCheckResult = 'no_update' | 'update_available' | 'throttled';
+export type UpdateTestScenario = UpdateCheckResult | 'error';
+
+export interface UpdateClient {
+  requestUpdateCheck(): Promise<UpdateCheckResult>;
+  onUpdateAvailable(cb: () => void): () => void;
+  reload(): void;
+}
 
 export interface AppState {
   preferences: {
@@ -257,7 +283,10 @@ export type MessageType =
   | 'REPORT_ERROR'
   | 'CHECK_FILE_CHANGED' // New message type
   | 'PREFERENCES_UPDATED'
-  | 'RELOAD_CONTENT';
+  | 'RELOAD_CONTENT'
+  | 'UPDATE_GET_STATE'
+  | 'UPDATE_CHECK'
+  | 'UPDATE_APPLY';
 
 export interface WorkerResponse {
   id: string;

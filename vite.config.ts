@@ -7,6 +7,7 @@ import packageJson from './package.json';
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
+    __MDVIEW_TESTING__: JSON.stringify(process.env.MDVIEW_TESTING === 'true'),
   },
   plugins: [crx({ manifest })],
   base: './',
