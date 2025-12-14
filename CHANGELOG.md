@@ -5,6 +5,20 @@
 
 * **changelog:** remove duplicate 0.2.0 section ([2e2cfd5](https://github.com/jamesainslie/mdview/commit/2e2cfd5b698b77d8c88244a3a0ed86ba6751de88))
 
+## [0.3.4](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.3...mdview-v0.3.4) (2025-12-06)
+
+
+### Features
+
+* **options:** add configurable TOC style option ([13d7dc9](https://github.com/jamesainslie/mdview/commit/13d7dc90d1e19bd4d02bb255b3c194772760f6d0))
+
+
+### Bug Fixes
+
+* **css:** resolve styling conflicts and improve specificity ([0ecebca](https://github.com/jamesainslie/mdview/commit/0ecebca3e7665a3cefb4b49c47e10e37d15b1570))
+* **deps:** resolve security vulnerabilities in mermaid-cli dependencies ([5a439cf](https://github.com/jamesainslie/mdview/commit/5a439cf4947e8e79d2664f147e98cfa900044099))
+* **test:** update test mocks for vitest 4.0 compatibility ([4567bae](https://github.com/jamesainslie/mdview/commit/4567bae7ac9cfbd085f734b47e0f188a17e771e1))
+
 ## [0.3.3](https://github.com/jamesainslie/mdview/compare/mdview-v0.3.2...mdview-v0.3.3) (2025-12-03)
 
 
