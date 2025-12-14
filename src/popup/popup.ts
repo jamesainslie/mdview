@@ -87,17 +87,23 @@ class PopupManager {
   }
 
   private async loadState(): Promise<void> {
+    console.log('[Popup] loadState called');
     try {
       const response: unknown = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
       this.state = (response as { state: AppState }).state;
 
+      const level = this.state?.preferences?.logLevel;
+      console.log('[Popup] Loaded logLevel from preferences:', level);
+
       // Sync logger level from loaded preferences so logs actually appear
-      if (this.state?.preferences?.logLevel) {
-        debug.setLogLevel(this.state.preferences.logLevel);
+      if (level) {
+        debug.setLogLevel(level);
+        console.log('[Popup] Set debug.logLevel to:', debug.getLogLevel());
       }
 
       debug.log('Popup', 'State loaded:', this.state);
     } catch (error) {
+      console.error('[Popup] loadState error:', error);
       debug.error('Popup', 'Failed to load state:', error);
     }
   }
@@ -434,19 +440,23 @@ class PopupManager {
   }
 
   private async handleUpdateCheck(): Promise<void> {
+    console.log('[Popup] handleUpdateCheck called');
     try {
       debug.info('Popup', 'User requested update check');
       this.updateState = { status: 'checking', lastCheckedAt: Date.now() };
       this.updateUpdatesUI();
 
+      console.log('[Popup] Sending UPDATE_CHECK message');
       const response: unknown = await chrome.runtime.sendMessage({
         type: 'UPDATE_CHECK',
         payload: { force: true },
       });
+      console.log('[Popup] UPDATE_CHECK response:', response);
       this.updateState = (response as { updateState: UpdateState }).updateState;
       debug.info('Popup', 'Update check completed', this.updateState);
       this.updateUpdatesUI();
     } catch (error) {
+      console.error('[Popup] handleUpdateCheck error:', error);
       debug.error('Popup', 'Update check failed:', error);
       this.updateState = { status: 'error', lastError: String(error) };
       this.updateUpdatesUI();
